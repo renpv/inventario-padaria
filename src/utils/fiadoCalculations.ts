@@ -1,4 +1,4 @@
-import { CreditMovement } from '../components/StaffCreditHistory';
+import type { CreditMovement } from '../components/StaffCreditHistory';
 
 export const computeRunningBalances = (movements: CreditMovement[]): (CreditMovement & { saldoApos: number })[] => {
   let runningBalance = 0;

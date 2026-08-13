@@ -36,11 +36,19 @@ export const ShiftInventory: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data, error } = await supabase
-          .from('produtos')
-          .select('id_produto, nome_produto, unidade_medida')
-          .eq('id_setor', id_setor)
-          .eq('ativo', 'SIM');
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id_setor || '');
+        let data = null;
+        let error = null;
+
+        if (isUUID) {
+          const res = await supabase
+            .from('produtos')
+            .select('id_produto, nome_produto, unidade_medida')
+            .eq('id_setor', id_setor)
+            .eq('ativo', 'SIM');
+          data = res.data;
+          error = res.error;
+        }
 
         if (data && data.length > 0 && !error) {
           setProducts(data);
@@ -112,6 +120,16 @@ export const ShiftInventory: React.FC = () => {
   const handleConfirmSubmission = async () => {
     setSubmitting(true);
     try {
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id_turno || '');
+      
+      if (!isUUID) {
+        // Mock submission (e.g. User clicked a mock sector in SectorSelector)
+        console.log('Mock submission successful for fake ID:', id_turno);
+        await clearDraft();
+        navigate('/');
+        return;
+      }
+
       // Submit new operational log (lancamentos_op)
       const { data: logData, error: logError } = await supabase
         .from('lancamentos_op')

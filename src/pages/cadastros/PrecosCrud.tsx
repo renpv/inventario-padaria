@@ -94,24 +94,29 @@ export const PrecosCrud: React.FC = () => {
       </div>
 
       <form onSubmit={handleSave} className="bg-stone-850 p-4 rounded-xl border border-stone-800 space-y-4">
+        {produtos.length === 0 && <div className="text-xs text-rose-400 bg-rose-400/10 p-2 rounded">⚠️ Cadastre pelo menos um Produto primeiro.</div>}
+        {fornecedores.length === 0 && <div className="text-xs text-rose-400 bg-rose-400/10 p-2 rounded">⚠️ Cadastre pelo menos um Fornecedor primeiro.</div>}
+        
         <div>
           <label className="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">Fornecedor</label>
-          <select required value={idFornecedor} onChange={e => setIdFornecedor(e.target.value)} className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-sm text-stone-200 outline-none">
+          <select required disabled={fornecedores.length === 0} value={idFornecedor} onChange={e => setIdFornecedor(e.target.value)} className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-sm text-stone-200 outline-none disabled:opacity-50">
             {fornecedores.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
+            {fornecedores.length === 0 && <option value="">Nenhum fornecedor disponível</option>}
           </select>
         </div>
         <div>
           <label className="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">Produto</label>
-          <select required value={idProduto} onChange={e => setIdProduto(e.target.value)} className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-sm text-stone-200 outline-none">
+          <select required disabled={produtos.length === 0} value={idProduto} onChange={e => setIdProduto(e.target.value)} className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-sm text-stone-200 outline-none disabled:opacity-50">
             {produtos.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            {produtos.length === 0 && <option value="">Nenhum produto disponível</option>}
           </select>
         </div>
         <div>
           <label className="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">Valor Unitário (R$)</label>
-          <input type="number" step="0.01" required value={valor} onChange={e => setValor(parseFloat(e.target.value))} className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-sm text-stone-200 outline-none" />
+          <input type="number" step="0.01" required disabled={produtos.length === 0 || fornecedores.length === 0} value={valor} onChange={e => setValor(parseFloat(e.target.value))} className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-sm text-stone-200 outline-none disabled:opacity-50" />
         </div>
         
-        <button type="submit" className="w-full py-3 bg-amber-600/20 text-amber-500 border border-amber-600/50 rounded-lg font-bold flex justify-center items-center gap-2">
+        <button type="submit" disabled={produtos.length === 0 || fornecedores.length === 0} className="w-full py-3 bg-amber-600/20 text-amber-500 border border-amber-600/50 rounded-lg font-bold flex justify-center items-center gap-2 disabled:opacity-50">
           <Plus size={18} /> Salvar Preço (Substituir)
         </button>
       </form>

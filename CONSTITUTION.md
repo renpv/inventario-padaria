@@ -17,9 +17,10 @@ O fluxo principal (contagem de inventário) baseia-se em entrada por voz via Web
 
 ### IV. Test-Driven & Qualidade Garantida (NON-NEGOTIABLE)
 Nenhuma funcionalidade é considerada completa sem a devida cobertura de testes, que engloba:
-- **Testes Unitários:** Para lógicas isoladas e regras de negócio (cálculos, fuzzy matching).
+- **Testes Unitários:** Para lógicas isoladas e regras de negócio (cálculos, fuzzy matching). Manter alta cobertura, acima de 80%.
 - **Testes de Integração:** Para interações com o Supabase e lógicas de banco (RPCs, Self-Healing).
 - **Testes E2E (Playwright):** Para fluxos operacionais completos na interface de usuário.
+- **Documentação de Testes:** Todos os testes devem ser documentados em `DOCUMENTATION_OF_TESTS.md`.
 
 ### V. Atomicidade e Commits por Tarefa
 O progresso deve ser granular e rastreável. Cada tarefa listada em `task.md` e efetivamente implementada deve gerar obrigatoriamente um commit isolado, no padrão Conventional Commits, garantindo o histórico exato do desenvolvimento sem a necessidade de push imediato.

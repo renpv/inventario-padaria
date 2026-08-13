@@ -132,6 +132,16 @@
 - [x] T041 Build `ProdutosCrud` page linking products to sectors.
 - [x] T042 Build `PrecosCrud` page mapping products to suppliers with pricing.
 
+### Fase 11 - Auditoria QA e Cobertura E2E
+
+**Goal**: Corrigir bugs de UUID, suprimir erros visuais, construir tela de configurações (RF-20) e garantir E2E.
+
+- [x] T043 Fix UUID Bad Request bugs in `ShiftInventory.tsx` and suppress Speech API aborted error.
+- [x] T044 Build `ConfiguracoesCrud` UI to manage system settings and update Hub.
+- [x] T045 Improve visual validation in `PrecosCrud` and rename Funcionarios to "Time da Loja".
+- [x] T046 Write E2E test for operational inventory flow in `tests/e2e/inventario-flow.spec.ts`.
+- [x] T047 Write E2E test for CRUD flow in `tests/e2e/crud-flow.spec.ts`.
+
 ---
 
 ## Dependencies & Execution Order

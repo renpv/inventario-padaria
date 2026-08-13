@@ -43,7 +43,11 @@ export const Config: React.FC = () => {
           </Link>
           <Link to="/gestao/cadastros/funcionarios" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
             <span className="text-2xl group-hover:scale-110 transition-transform">👥</span>
-            <span className="text-xs font-bold text-stone-300">Funcionários</span>
+            <span className="text-xs font-bold text-stone-300 text-center leading-tight">Time da Loja<br/>(Fiado)</span>
+          </Link>
+          <Link to="/gestao/cadastros/configuracoes" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">⚙️</span>
+            <span className="text-xs font-bold text-stone-300">Configurações</span>
           </Link>
           <Link to="/gestao/cadastros/usuarios" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
             <span className="text-2xl group-hover:scale-110 transition-transform">🛡️</span>

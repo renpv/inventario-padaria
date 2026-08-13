@@ -126,7 +126,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 4. View: view_dashboard_estoques
 -- View para exibir o painel consolidado de estoques na gestão
-CREATE OR REPLACE VIEW view_dashboard_estoques AS
+CREATE OR REPLACE VIEW view_dashboard_estoques WITH (security_invoker = true) AS
 SELECT 
     p.id_produto,
     p.nome_produto,

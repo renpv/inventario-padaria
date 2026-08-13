@@ -34,6 +34,11 @@ export const useSpeechToText = ({ onTranscript }: UseSpeechToTextProps) => {
     };
 
     recognition.onerror = (event: any) => {
+      if (event.error === 'aborted') {
+        // Ignore aborted error silently, it happens normally when stopped or idle.
+        setIsListening(false);
+        return;
+      }
       console.error('Speech recognition error:', event.error);
       setError(`Erro no reconhecimento: ${event.error}`);
       setIsListening(false);

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeRunningBalances } from './fiadoCalculations';
-import { CreditMovement } from '../components/StaffCreditHistory';
+import type { CreditMovement } from '../components/StaffCreditHistory';
 
 describe('fiadoCalculations - computeRunningBalances', () => {
   it('should compute running balances correctly for a series of debits and credits', () => {
