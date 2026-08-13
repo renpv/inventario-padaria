@@ -106,6 +106,16 @@
 
 ---
 
+## Phase 8: Adequação à Constituição (E2E e Cobertura)
+
+**Purpose**: Garantir 100% de adequação ao item IV da Constituição (Test-Driven & Qualidade Garantida).
+
+- [x] T032 Install `@vitest/coverage-v8` to enforce unit test coverage rule.
+- [x] T033 Write E2E test for WMS Flow in `tests/e2e/wms-flow.spec.ts`.
+- [x] T034 Write E2E test for Fiado Flow in `tests/e2e/fiado-flow.spec.ts`.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

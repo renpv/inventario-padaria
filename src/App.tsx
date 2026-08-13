@@ -8,6 +8,8 @@ import { SectorSelector } from './pages/SectorSelector';
 import { ShiftInventory } from './pages/ShiftInventory';
 import { Fiado } from './pages/Fiado';
 import { Config } from './pages/Config';
+import { WmsDashboard } from './pages/WmsDashboard';
+import { CreditManagement } from './pages/CreditManagement';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ children, allowedRoles }) => {
   const { role } = useAuth();
@@ -42,6 +44,8 @@ const AppContent: React.FC = () => {
           <Route path="/inventario" element={<ProtectedRoute><SectorSelector /></ProtectedRoute>} />
           <Route path="/inventario/:id_turno/:id_setor" element={<ProtectedRoute><ShiftInventory /></ProtectedRoute>} />
           <Route path="/fiado" element={<ProtectedRoute><Fiado /></ProtectedRoute>} />
+          <Route path="/wms" element={<ProtectedRoute allowedRoles={['gestao']}><WmsDashboard /></ProtectedRoute>} />
+          <Route path="/gestao/fiados" element={<ProtectedRoute allowedRoles={['gestao']}><CreditManagement /></ProtectedRoute>} />
           <Route path="/config" element={<ProtectedRoute allowedRoles={['gestao']}><Config /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

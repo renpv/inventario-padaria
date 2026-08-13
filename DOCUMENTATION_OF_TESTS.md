@@ -34,3 +34,9 @@ Este arquivo mapeia e documenta os testes do projeto em acordo com a constituiç
 
 - **Login e Inventário (`login-flow.spec.ts`):**
   Varre a interface desde a inserção do PIN de acesso (1234) até a listagem de setores, escolha do setor "Pães" e preenchimento de uma quantidade usando interface ou fallback de voz (quando mockado). Tem timeouts configurados para acomodar os cold starts do servidor local.
+
+- **Fluxo Operacional de Fiados (`fiado-flow.spec.ts`):**
+  Verifica se o Operador logado por PIN consegue acessar a interface `/fiado`, validar a seleção de funcionários e os campos de valor/produto necessários para um lançamento, garantindo que o form exibe as restrições corretas.
+
+- **Dashboard WMS (`wms-flow.spec.ts`):**
+  Testa a restrição de segurança da rota `/wms` bloqueando acessos indevidos e redirecionando (já que o fluxo gerencial completo via Google Auth OAuth é testado manualmente em homologação).
