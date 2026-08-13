@@ -16,6 +16,7 @@ import { ProdutosCrud } from './pages/cadastros/ProdutosCrud';
 import { FornecedoresCrud } from './pages/cadastros/FornecedoresCrud';
 import { FuncionariosCrud } from './pages/cadastros/FuncionariosCrud';
 import { PrecosCrud } from './pages/cadastros/PrecosCrud';
+import { UsuariosCrud } from './pages/cadastros/UsuariosCrud';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ children, allowedRoles }) => {
   const { role } = useAuth();
@@ -61,6 +62,7 @@ const AppContent: React.FC = () => {
           <Route path="/gestao/cadastros/fornecedores" element={<ProtectedRoute allowedRoles={['gestao']}><FornecedoresCrud /></ProtectedRoute>} />
           <Route path="/gestao/cadastros/funcionarios" element={<ProtectedRoute allowedRoles={['gestao']}><FuncionariosCrud /></ProtectedRoute>} />
           <Route path="/gestao/cadastros/precos" element={<ProtectedRoute allowedRoles={['gestao']}><PrecosCrud /></ProtectedRoute>} />
+          <Route path="/gestao/cadastros/usuarios" element={<ProtectedRoute allowedRoles={['gestao']}><UsuariosCrud /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
