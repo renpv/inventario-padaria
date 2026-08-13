@@ -10,6 +10,12 @@ import { Fiado } from './pages/Fiado';
 import { Config } from './pages/Config';
 import { WmsDashboard } from './pages/WmsDashboard';
 import { CreditManagement } from './pages/CreditManagement';
+import { TurnosCrud } from './pages/cadastros/TurnosCrud';
+import { SetoresCrud } from './pages/cadastros/SetoresCrud';
+import { ProdutosCrud } from './pages/cadastros/ProdutosCrud';
+import { FornecedoresCrud } from './pages/cadastros/FornecedoresCrud';
+import { FuncionariosCrud } from './pages/cadastros/FuncionariosCrud';
+import { PrecosCrud } from './pages/cadastros/PrecosCrud';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ children, allowedRoles }) => {
   const { role } = useAuth();
@@ -47,6 +53,15 @@ const AppContent: React.FC = () => {
           <Route path="/wms" element={<ProtectedRoute allowedRoles={['gestao']}><WmsDashboard /></ProtectedRoute>} />
           <Route path="/gestao/fiados" element={<ProtectedRoute allowedRoles={['gestao']}><CreditManagement /></ProtectedRoute>} />
           <Route path="/config" element={<ProtectedRoute allowedRoles={['gestao']}><Config /></ProtectedRoute>} />
+          
+          {/* Rotas de Cadastros */}
+          <Route path="/gestao/cadastros/turnos" element={<ProtectedRoute allowedRoles={['gestao']}><TurnosCrud /></ProtectedRoute>} />
+          <Route path="/gestao/cadastros/setores" element={<ProtectedRoute allowedRoles={['gestao']}><SetoresCrud /></ProtectedRoute>} />
+          <Route path="/gestao/cadastros/produtos" element={<ProtectedRoute allowedRoles={['gestao']}><ProdutosCrud /></ProtectedRoute>} />
+          <Route path="/gestao/cadastros/fornecedores" element={<ProtectedRoute allowedRoles={['gestao']}><FornecedoresCrud /></ProtectedRoute>} />
+          <Route path="/gestao/cadastros/funcionarios" element={<ProtectedRoute allowedRoles={['gestao']}><FuncionariosCrud /></ProtectedRoute>} />
+          <Route path="/gestao/cadastros/precos" element={<ProtectedRoute allowedRoles={['gestao']}><PrecosCrud /></ProtectedRoute>} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

@@ -121,6 +121,17 @@
 - [x] T035 Create a database trigger to enforce Whitelist logic (only pre-registered emails can login via Google).
 - [x] T036 Build User Management Interface in `Config.tsx` to handle Whitelist pre-registrations.
 
+### Fase 10 - Módulo de Cadastros (CRUD)
+
+**Goal**: Implementar interface gráfica para gerenciamento de todas as entidades cruciais do sistema (RF-13 e RF-20).
+
+- [x] T037 Create `Cadastros` routing in `App.tsx` and hub in `Config.tsx`.
+- [x] T038 Build `TurnosCrud` page to manage operational shifts.
+- [x] T039 Build `SetoresCrud` page to manage physical store sections.
+- [x] T040 Build `FornecedoresCrud` and `FuncionariosCrud` pages.
+- [x] T041 Build `ProdutosCrud` page linking products to sectors.
+- [x] T042 Build `PrecosCrud` page mapping products to suppliers with pricing.
+
 ---
 
 ## Dependencies & Execution Order

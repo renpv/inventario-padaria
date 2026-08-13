@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { Plus, UserX, UserCheck, ShieldAlert } from 'lucide-react';
 
@@ -78,6 +79,39 @@ export const Config: React.FC = () => {
         <p className="text-sm text-stone-400">
           Gerenciamento de Lista Branca (Whitelist) de acessos e configurações do sistema.
         </p>
+      </div>
+
+      {/* Hub de Cadastros */}
+      <div className="bg-stone-850 p-6 rounded-xl border border-stone-800 space-y-4">
+        <h3 className="font-bold text-stone-200">Módulo de Cadastros</h3>
+        <p className="text-sm text-stone-400 mb-4">Gerencie os dados base do sistema.</p>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <Link to="/gestao/cadastros/turnos" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">⏰</span>
+            <span className="text-xs font-bold text-stone-300">Turnos</span>
+          </Link>
+          <Link to="/gestao/cadastros/setores" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">🏪</span>
+            <span className="text-xs font-bold text-stone-300">Setores</span>
+          </Link>
+          <Link to="/gestao/cadastros/produtos" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">📦</span>
+            <span className="text-xs font-bold text-stone-300">Produtos</span>
+          </Link>
+          <Link to="/gestao/cadastros/fornecedores" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">🚚</span>
+            <span className="text-xs font-bold text-stone-300">Fornecedores</span>
+          </Link>
+          <Link to="/gestao/cadastros/precos" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">💲</span>
+            <span className="text-xs font-bold text-stone-300">Preços</span>
+          </Link>
+          <Link to="/gestao/cadastros/funcionarios" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">👥</span>
+            <span className="text-xs font-bold text-stone-300">Funcionários</span>
+          </Link>
+        </div>
       </div>
 
       {/* Adicionar Usuário */}
