@@ -87,10 +87,10 @@
 
 ### Implementation for User Story 4
 
-- [ ] T025 [P] [US4] Create staff credit activity log component in `src/components/StaffCreditHistory.tsx`
-- [ ] T026 [US4] Implement database checks preventing writes exceeding `limite_global_fiado` in `supabase/migrations/`
-- [ ] T027 [US4] Create managerial debit clearance interface in `src/pages/CreditManagement.tsx`
-- [ ] T028 [US4] Write integration tests verifying operational account exclusion from quitações in `supabase/tests/fiado_security.test.sql`
+- [x] T025 [P] [US4] Create staff credit activity log component in `src/components/StaffCreditHistory.tsx`
+- [x] T026 [US4] Implement database checks preventing writes exceeding `limite_global_fiado` in `supabase/migrations/`
+- [x] T027 [US4] Create managerial debit clearance interface in `src/pages/CreditManagement.tsx`
+- [x] T028 [US4] Write integration tests verifying operational account exclusion from quitações in `supabase/tests/fiado_security.test.sql`
 
 **Checkpoint**: Credit limits are strictly enforced on db level and clearance restricted.
 
@@ -100,9 +100,9 @@
 
 **Purpose**: Documentation updates, UI styling polish, and system-wide verification.
 
-- [ ] T029 Update system documentation in `README.md`
-- [ ] T030 Perform system-wide verification checklist in `quickstart.md`
-- [ ] T031 Optimize application build bundle size and check PWA install configurations
+- [x] T029 Update system documentation in `README.md`
+- [x] T030 Perform system-wide verification checklist in `quickstart.md`
+- [x] T031 Optimize application build bundle size and check PWA install configurations
 
 ---
 
