@@ -12,6 +12,11 @@
 
 ---
 
+### 7.1. Políticas de Acesso
+- O aplicativo adota o modelo de bloqueio por **Whitelist (Lista Branca)** para gestores.
+- Novos usuários que tentarem fazer login via Google OAuth só terão acesso permitido se o seu e-mail já houver sido pré-cadastrado na tabela `usuarios` por um administrador.
+- Se o e-mail não constar na Whitelist, o gatilho (`handle_new_user`) do banco de dados abortará a criação da conta na camada de Autenticação, garantindo segurança hermética contra acessos não autorizados.
+
 ## 1. Visão Geral
 
 Aplicação para uma padaria, cobrindo três domínios:

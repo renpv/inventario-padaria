@@ -114,6 +114,12 @@
 - [x] T033 Write E2E test for WMS Flow in `tests/e2e/wms-flow.spec.ts`.
 - [x] T034 Write E2E test for Fiado Flow in `tests/e2e/fiado-flow.spec.ts`.
 
+### Fase 9 - Endurecimento de Segurança de Produção (Whitelist)
+
+**Goal**: Implementar fluxo de lista branca para o cadastro no OAuth do Supabase, barrando intrusos.
+
+- [x] T035 Create a database trigger to enforce Whitelist logic (only pre-registered emails can login via Google).
+
 ---
 
 ## Dependencies & Execution Order
