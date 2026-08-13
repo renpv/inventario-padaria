@@ -11,6 +11,8 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 - **Modo Offline**: Mecanismo de persistência no navegador via IndexedDB/Dexie e Sync Daemon, preservando dados (drafts e operações confirmadas) durante falhas de rede.
 - **Self-Healing SQL**: Migração e testes integrados para procedimentos em Postgres (RPCs) que injetam faltas em turnos operacionais omitidos.
 - **Dashboard WMS**: Dashboards calculando a sugestão de compra em tempo real via views no banco e tela de visualização de pedidos de suprimento (WhatsApp sharing).
+- **Controle de Fiado (US4)**: Implementada a gestão de fiados, permitindo lançamentos operacionais de débitos e quitações exclusivas por gestores.
+- **Segurança e Limites**: Trigger SQL que impede de ultrapassar o `limite_global_fiado` durante os lançamentos, garantindo consistência até em ressincronizações offline.
 - **Autenticação Dupla (Contexto)**: `AuthContext` com fallbacks locais de Login via Google OAuth para o gestor e PIN numérico genérico para operadores.
 
 ### Modificado
