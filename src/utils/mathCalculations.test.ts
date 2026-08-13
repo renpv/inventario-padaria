@@ -1,14 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-export const calculatePurchaseSuggestion = (
-  consumo: number,
-  minimo: number,
-  estoqueAtual: number,
-  pedidosEnviados: number
-): number => {
-  const sugerido = (consumo + minimo) - (estoqueAtual + pedidosEnviados);
-  return Math.max(0, sugerido);
-};
+import { calculatePurchaseSuggestion } from './mathCalculations';
 
 describe('WMS Purchase Suggestion Formula bounds', () => {
   it('calculates suggested purchase quantity correctly under normal parameters', () => {
@@ -24,5 +15,10 @@ describe('WMS Purchase Suggestion Formula bounds', () => {
   it('bounds at 0 when pending orders satisfy the requirements', () => {
     // (Consumo: 20 + Minimo: 10) - (Estoque: 5 + Enviados: 30) = -5 -> should bound at 0
     expect(calculatePurchaseSuggestion(20, 10, 5, 30)).toBe(0);
+  });
+
+  it('matches the boundary case where consumption plus minimum exactly equals available stock', () => {
+    // (Consumo: 50 + Minimo: 10) - (Estoque: 40 + Enviados: 20) = 0
+    expect(calculatePurchaseSuggestion(50, 10, 40, 20)).toBe(0);
   });
 });

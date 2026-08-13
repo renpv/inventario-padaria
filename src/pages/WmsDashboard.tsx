@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../services/supabaseClient';
 import { OrderPreview } from '../components/OrderPreview';
 import type { OrderItem } from '../components/OrderPreview';
-import { Package, Truck, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Package, Truck, AlertTriangle, RefreshCw, ListOrdered } from 'lucide-react';
 
 interface StockItem {
   id_produto: string;
@@ -13,33 +14,46 @@ interface StockItem {
   estoque_atual: number;
   consumo_periodo: number;
   quantidade_sugerida: number;
-  fornecedor_principal?: string;
-  valor_unitario?: number;
+  id_fornecedor_sugerido?: string | null;
+  fornecedor_sugerido?: string | null;
+  valor_unitario_sugerido?: number | null;
 }
+
+interface Fornecedor {
+  id_fornecedor: string;
+  nome: string;
+  pedido_minimo: number;
+  taxa_entrega: number;
+}
+
+const isUUID = (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 export const WmsDashboard: React.FC = () => {
   const [stockList, setStockList] = useState<StockItem[]>([]);
+  const [fornecedores, setFornecedores] = useState<Record<string, Fornecedor>>({});
   const [loading, setLoading] = useState(true);
-  const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [supplierOrderItems, setSupplierOrderItems] = useState<OrderItem[]>([]);
+  const [mockMode, setMockMode] = useState(false);
 
   useEffect(() => {
     const fetchStockData = async () => {
       try {
-        const { data, error } = await supabase
-          .from('view_dashboard_estoques')
-          .select('*');
+        const [stockRes, fornecedoresRes] = await Promise.all([
+          supabase.from('view_dashboard_estoques').select('*'),
+          supabase.from('fornecedores').select('id_fornecedor, nome, pedido_minimo, taxa_entrega').eq('ativo', 'SIM'),
+        ]);
 
-        if (data && data.length > 0 && !error) {
-          // Mocking supplier binding since view doesn't have it directly
-          const boundData = data.map((item: any, idx: number) => ({
-            ...item,
-            fornecedor_principal: idx % 2 === 0 ? 'Distribuidora Trigo Dourado' : 'Laticínios Alvorada',
-            valor_unitario: idx % 2 === 0 ? 4.50 : 18.90,
-          }));
-          setStockList(boundData);
+        if (stockRes.data && stockRes.data.length > 0 && !stockRes.error) {
+          setMockMode(false);
+          setStockList(stockRes.data as StockItem[]);
+          const map: Record<string, Fornecedor> = {};
+          for (const f of fornecedoresRes.data || []) map[f.id_fornecedor] = f as Fornecedor;
+          setFornecedores(map);
         } else {
-          // Mock data fallback
+          // Ambiente sem dados reais: mantém uma amostra ilustrativa (não é
+          // possível registrar pedidos reais neste modo).
+          setMockMode(true);
           setStockList([
             {
               id_produto: 'p1',
@@ -49,9 +63,10 @@ export const WmsDashboard: React.FC = () => {
               estoque_minimo: 50,
               estoque_atual: 20,
               consumo_periodo: 120,
-              quantidade_sugerida: 150, // (120+50) - (20+0) = 150
-              fornecedor_principal: 'Distribuidora Trigo Dourado',
-              valor_unitario: 4.50,
+              quantidade_sugerida: 150,
+              id_fornecedor_sugerido: 'mock-f1',
+              fornecedor_sugerido: 'Distribuidora Trigo Dourado',
+              valor_unitario_sugerido: 4.5,
             },
             {
               id_produto: 'p2',
@@ -61,9 +76,10 @@ export const WmsDashboard: React.FC = () => {
               estoque_minimo: 10,
               estoque_atual: 2,
               consumo_periodo: 15,
-              quantidade_sugerida: 23, // (15+10) - (2+0) = 23
-              fornecedor_principal: 'Laticínios Alvorada',
-              valor_unitario: 18.90,
+              quantidade_sugerida: 23,
+              id_fornecedor_sugerido: 'mock-f2',
+              fornecedor_sugerido: 'Laticínios Alvorada',
+              valor_unitario_sugerido: 18.9,
             },
             {
               id_produto: 'p3',
@@ -73,9 +89,10 @@ export const WmsDashboard: React.FC = () => {
               estoque_minimo: 5,
               estoque_atual: 6,
               consumo_periodo: 8,
-              quantidade_sugerida: 7, // (8+5) - (6+0) = 7
-              fornecedor_principal: 'Distribuidora Trigo Dourado',
-              valor_unitario: 12.00,
+              quantidade_sugerida: 7,
+              id_fornecedor_sugerido: 'mock-f1',
+              fornecedor_sugerido: 'Distribuidora Trigo Dourado',
+              valor_unitario_sugerido: 12.0,
             },
           ]);
         }
@@ -89,31 +106,75 @@ export const WmsDashboard: React.FC = () => {
     fetchStockData();
   }, []);
 
-  const handleSupplierOrder = (supplier: string) => {
+  const handleSupplierOrder = (id_fornecedor: string) => {
     const items = stockList
-      .filter((item) => item.fornecedor_principal === supplier && item.quantidade_sugerida > 0)
+      .filter((item) => item.id_fornecedor_sugerido === id_fornecedor && item.quantidade_sugerida > 0)
       .map((item) => ({
         id_produto: item.id_produto,
         nome_produto: item.nome_produto,
         quantidade: item.quantidade_sugerida,
         unidade_medida: item.unidade_medida,
-        valor_unitario: item.valor_unitario ?? 0,
+        valor_unitario: item.valor_unitario_sugerido ?? 0,
       }));
 
     setSupplierOrderItems(items);
-    setSelectedSupplier(supplier);
+    setSelectedSupplierId(id_fornecedor);
   };
 
-  // Group by supplier
+  const handleConfirmOrder = async () => {
+    if (!selectedSupplierId || !isUUID(selectedSupplierId)) return;
+
+    const fornecedor = fornecedores[selectedSupplierId];
+    const valorProdutos = supplierOrderItems.reduce((acc, i) => acc + i.quantidade * i.valor_unitario, 0);
+    const taxaEntrega = fornecedor?.taxa_entrega || 0;
+
+    const { data: pedido, error: pedidoError } = await supabase
+      .from('pedidos_compra')
+      .insert({
+        id_fornecedor: selectedSupplierId,
+        valor_produtos: valorProdutos,
+        taxa_entrega: taxaEntrega,
+        valor_total: valorProdutos + taxaEntrega,
+        status: 'Simulado',
+      })
+      .select('id_pedido')
+      .single();
+
+    if (pedidoError || !pedido) {
+      alert('Não foi possível registrar o pedido: ' + (pedidoError?.message || 'erro desconhecido'));
+      throw pedidoError;
+    }
+
+    const itensPayload = supplierOrderItems.map((i) => ({
+      id_pedido: pedido.id_pedido,
+      id_produto: i.id_produto,
+      quantidade: i.quantidade,
+      valor_unit_aplicado: i.valor_unitario,
+    }));
+
+    const { error: itensError } = await supabase.from('pedidos_itens').insert(itensPayload);
+    if (itensError) {
+      alert('Pedido criado, mas houve falha ao gravar os itens: ' + itensError.message);
+      throw itensError;
+    }
+  };
+
+  // Agrupa por fornecedor sugerido (id), usando o de menor preço por
+  // produto — já resolvido pela view (RF-16).
   const supplierGroups = stockList.reduce((acc, curr) => {
-    if (curr.quantidade_sugerida <= 0 || !curr.fornecedor_principal) return acc;
-    const existing = acc[curr.fornecedor_principal] || { count: 0, totalVal: 0 };
-    acc[curr.fornecedor_principal] = {
+    if (curr.quantidade_sugerida <= 0 || !curr.id_fornecedor_sugerido) return acc;
+    const existing = acc[curr.id_fornecedor_sugerido] || {
+      nome: curr.fornecedor_sugerido || 'Fornecedor',
+      count: 0,
+      totalVal: 0,
+    };
+    acc[curr.id_fornecedor_sugerido] = {
+      nome: existing.nome,
       count: existing.count + 1,
-      totalVal: existing.totalVal + curr.quantidade_sugerida * (curr.valor_unitario ?? 0),
+      totalVal: existing.totalVal + curr.quantidade_sugerida * (curr.valor_unitario_sugerido ?? 0),
     };
     return acc;
-  }, {} as Record<string, { count: number; totalVal: number }>);
+  }, {} as Record<string, { nome: string; count: number; totalVal: number }>);
 
   if (loading) {
     return (
@@ -125,6 +186,7 @@ export const WmsDashboard: React.FC = () => {
   }
 
   const itemsBelowMin = stockList.filter((item) => item.estoque_atual < item.estoque_minimo).length;
+  const selectedFornecedor = selectedSupplierId ? fornecedores[selectedSupplierId] : undefined;
 
   return (
     <div className="space-y-6">
@@ -146,6 +208,16 @@ export const WmsDashboard: React.FC = () => {
         </div>
       </div>
 
+      <Link
+        to="/gestao/pedidos"
+        className="flex items-center justify-between bg-stone-850 hover:bg-stone-800 p-4 rounded-xl border border-stone-800 transition-colors"
+      >
+        <span className="flex items-center gap-2 text-sm font-bold text-stone-200">
+          <ListOrdered size={16} className="text-amber-500" /> Pedidos de Compra
+        </span>
+        <span className="text-xs text-stone-500">Ver todos &rarr;</span>
+      </Link>
+
       {/* Suggested Orders by Supplier */}
       <div className="space-y-3">
         <h2 className="text-xs text-stone-400 font-bold uppercase tracking-wider">Sugestões por Fornecedor</h2>
@@ -155,13 +227,13 @@ export const WmsDashboard: React.FC = () => {
               Nenhuma sugestão de compra pendente. Estoques abastecidos.
             </div>
           ) : (
-            Object.entries(supplierGroups).map(([supplierName, group]) => (
+            Object.entries(supplierGroups).map(([idFornecedor, group]) => (
               <div
-                key={supplierName}
+                key={idFornecedor}
                 className="bg-stone-850 p-4 rounded-xl border border-stone-800 flex items-center justify-between shadow-md"
               >
                 <div className="space-y-1">
-                  <h3 className="font-semibold text-stone-200 text-sm">{supplierName}</h3>
+                  <h3 className="font-semibold text-stone-200 text-sm">{group.nome}</h3>
                   <p className="text-xs text-stone-400">
                     {group.count} itens sugeridos &bull;{' '}
                     <strong className="text-stone-300">
@@ -170,7 +242,7 @@ export const WmsDashboard: React.FC = () => {
                   </p>
                 </div>
                 <button
-                  onClick={() => handleSupplierOrder(supplierName)}
+                  onClick={() => handleSupplierOrder(idFornecedor)}
                   className="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-stone-900 font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
                 >
                   <Truck size={14} /> Pedir
@@ -182,11 +254,14 @@ export const WmsDashboard: React.FC = () => {
       </div>
 
       {/* WhatsApp Order Preview Modal */}
-      {selectedSupplier && (
+      {selectedSupplierId && (
         <OrderPreview
-          supplierName={selectedSupplier}
+          supplierName={supplierGroups[selectedSupplierId]?.nome || 'Fornecedor'}
           items={supplierOrderItems}
-          onClose={() => setSelectedSupplier(null)}
+          taxaEntrega={selectedFornecedor?.taxa_entrega || 0}
+          pedidoMinimo={selectedFornecedor?.pedido_minimo || 0}
+          onConfirmOrder={!mockMode ? handleConfirmOrder : undefined}
+          onClose={() => setSelectedSupplierId(null)}
         />
       )}
     </div>

@@ -23,10 +23,7 @@ export const TurnosCrud: React.FC = () => {
   const [ordem, setOrdem] = useState(1);
   const [inicio, setInicio] = useState('00:00');
   const [fim, setFim] = useState('23:59');
-
-  useEffect(() => {
-    fetchTurnos();
-  }, []);
+  const [notificacao, setNotificacao] = useState<'push' | 'email' | 'nenhuma'>('nenhuma');
 
   const fetchTurnos = async () => {
     setLoading(true);
@@ -38,6 +35,10 @@ export const TurnosCrud: React.FC = () => {
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchTurnos();
+  }, []);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
@@ -45,7 +46,7 @@ export const TurnosCrud: React.FC = () => {
       ordem,
       horario_inicio: inicio,
       horario_fim: fim,
-      notificacao_tipo: 'nenhuma' as const,
+      notificacao_tipo: notificacao,
       ativo: 'SIM' as const
     };
 
@@ -70,6 +71,7 @@ export const TurnosCrud: React.FC = () => {
     setOrdem(turnos.length > 0 ? Math.max(...turnos.map(t => t.ordem)) + 1 : 1);
     setInicio('00:00');
     setFim('23:59');
+    setNotificacao('nenhuma');
   };
 
   const editTurno = (t: Turno) => {
@@ -78,6 +80,7 @@ export const TurnosCrud: React.FC = () => {
     setOrdem(t.ordem);
     setInicio(t.horario_inicio.substring(0, 5));
     setFim(t.horario_fim.substring(0, 5));
+    setNotificacao(t.notificacao_tipo);
   };
 
   return (
@@ -108,6 +111,19 @@ export const TurnosCrud: React.FC = () => {
             <input type="time" required value={fim} onChange={e => setFim(e.target.value)} className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-sm text-stone-200 outline-none" />
           </div>
         </div>
+        <div>
+          <label className="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-1">Notificação</label>
+          <select
+            value={notificacao}
+            onChange={e => setNotificacao(e.target.value as 'push' | 'email' | 'nenhuma')}
+            className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-sm text-stone-200 outline-none"
+          >
+            <option value="nenhuma">Nenhuma</option>
+            <option value="push">Push</option>
+            <option value="email">E-mail</option>
+          </select>
+          <p className="text-[10px] text-stone-500 mt-1">Alerta enviado quando este turno atrasar em relação ao horário de início.</p>
+        </div>
         <div className="flex gap-2 pt-2">
           {idEdit && <button type="button" onClick={resetForm} className="flex-1 py-3 bg-stone-800 text-stone-300 rounded-lg font-bold">Cancelar</button>}
           <button type="submit" className="flex-[2] py-3 bg-amber-600/20 text-amber-500 border border-amber-600/50 rounded-lg font-bold flex justify-center items-center gap-2">
@@ -124,7 +140,12 @@ export const TurnosCrud: React.FC = () => {
                 <span className="bg-stone-800 text-amber-500 text-xs font-bold px-2 py-1 rounded">#{t.ordem}</span>
                 <p className="font-bold text-stone-200">{t.nome_turno}</p>
               </div>
-              <p className="text-xs text-stone-400 mt-1">{t.horario_inicio.substring(0, 5)} até {t.horario_fim.substring(0, 5)}</p>
+              <p className="text-xs text-stone-400 mt-1">
+                {t.horario_inicio.substring(0, 5)} até {t.horario_fim.substring(0, 5)}
+                {t.notificacao_tipo !== 'nenhuma' && (
+                  <span className="ml-2 text-[10px] uppercase font-bold text-amber-500">🔔 {t.notificacao_tipo}</span>
+                )}
+              </p>
             </div>
             <button onClick={() => toggleAtivo(t.id_turno, t.ativo)} className={`p-2 rounded-lg ${t.ativo === 'SIM' ? 'text-rose-400 bg-rose-400/10' : 'text-emerald-400 bg-emerald-400/10'}`}>
               <Trash2 size={18} />

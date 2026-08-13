@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../services/supabaseClient';
-import { Plus, UserX, UserCheck, ShieldAlert } from 'lucide-react';
 
 export const Config: React.FC = () => {
   return (
@@ -13,6 +11,21 @@ export const Config: React.FC = () => {
         <p className="text-sm text-stone-400">
           Gerenciamento de Lista Branca (Whitelist) de acessos e configurações do sistema.
         </p>
+      </div>
+
+      {/* Hub de Operações do Dia */}
+      <div className="bg-stone-850 p-6 rounded-xl border border-stone-800 space-y-4">
+        <h3 className="font-bold text-stone-200">Operações do Dia</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <Link to="/gestao/turnos-dia" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">🔓</span>
+            <span className="text-xs font-bold text-stone-300 text-center leading-tight">Turnos do Dia<br/>(reabertura)</span>
+          </Link>
+          <Link to="/gestao/pedidos" className="bg-stone-900 border border-stone-700 p-4 rounded-lg flex flex-col items-center gap-2 hover:border-amber-500 transition-colors group">
+            <span className="text-2xl group-hover:scale-110 transition-transform">📋</span>
+            <span className="text-xs font-bold text-stone-300">Pedidos de Compra</span>
+          </Link>
+        </div>
       </div>
 
       {/* Hub de Cadastros */}

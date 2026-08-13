@@ -7,6 +7,7 @@ export const Login: React.FC = () => {
   const { loginWithPIN, loginWithGoogle } = useAuth();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handlePINSubmit = async (e: React.FormEvent) => {
@@ -17,6 +18,16 @@ export const Login: React.FC = () => {
       navigate('/');
     } else {
       setError(true);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleError(null);
+    try {
+      await loginWithGoogle();
+    } catch (err) {
+      console.error('Login com Google falhou:', err);
+      setGoogleError('Não foi possível iniciar o login com Google. Tente novamente em instantes.');
     }
   };
 
@@ -70,7 +81,7 @@ export const Login: React.FC = () => {
 
         {/* Google OAuth Login */}
         <button
-          onClick={loginWithGoogle}
+          onClick={handleGoogleLogin}
           className="w-full bg-stone-800 hover:bg-stone-750 text-stone-200 font-semibold py-3 rounded-xl transition-colors border border-stone-700 flex items-center justify-center gap-2"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -81,6 +92,13 @@ export const Login: React.FC = () => {
           </svg>
           Entrar com o Google (Gestão)
         </button>
+
+        {googleError && (
+          <div className="flex items-center gap-2 text-xs text-rose-400 bg-rose-950/30 p-3 rounded-xl border border-rose-900">
+            <ShieldAlert size={16} />
+            <span>{googleError}</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, MessageSquare, X, Check } from 'lucide-react';
+import { Copy, MessageSquare, X, Check, ClipboardCheck, AlertTriangle } from 'lucide-react';
 
 export interface OrderItem {
   id_produto: string;
@@ -13,27 +13,49 @@ interface OrderPreviewProps {
   supplierName: string;
   items: OrderItem[];
   onClose: () => void;
+  /** Taxa de entrega do fornecedor, somada ao total do pedido. */
+  taxaEntrega?: number;
+  /** Pedido mínimo do fornecedor — abaixo disso, exige confirmação explícita (RF-16). */
+  pedidoMinimo?: number;
+  /**
+   * Se informado, habilita o botão "Registrar Pedido", que grava o pedido de
+   * verdade (pedidos_compra + pedidos_itens, status Simulado) em vez de
+   * apenas gerar um texto para compartilhar.
+   */
+  onConfirmOrder?: () => Promise<void>;
 }
 
-export const OrderPreview: React.FC<OrderPreviewProps> = ({ supplierName, items, onClose }) => {
+export const OrderPreview: React.FC<OrderPreviewProps> = ({
+  supplierName,
+  items,
+  onClose,
+  taxaEntrega = 0,
+  pedidoMinimo = 0,
+  onConfirmOrder,
+}) => {
   const [copied, setCopied] = useState(false);
+  const [confirmandoAbaixoMinimo, setConfirmandoAbaixoMinimo] = useState(false);
+  const [registrando, setRegistrando] = useState(false);
+  const [registrado, setRegistrado] = useState(false);
 
-  const calculateTotal = () => {
-    return items.reduce((acc, curr) => acc + curr.quantidade * curr.valor_unitario, 0);
-  };
+  const calculateSubtotal = () => items.reduce((acc, curr) => acc + curr.quantidade * curr.valor_unitario, 0);
+  const subtotal = calculateSubtotal();
+  const total = subtotal + taxaEntrega;
+  const abaixoDoMinimo = pedidoMinimo > 0 && subtotal < pedidoMinimo;
 
   const generateMessageText = () => {
     let text = `*Pedido de Compra - Padaria WMS*\n`;
     text += `*Fornecedor:* ${supplierName}\n`;
     text += `-------------------------------------\n`;
     items.forEach((item) => {
-      const subtotal = item.quantidade * item.valor_unitario;
+      const itemSubtotal = item.quantidade * item.valor_unitario;
       text += `- ${item.nome_produto}: ${item.quantidade} ${item.unidade_medida} (R$ ${item.valor_unitario.toFixed(
         2
-      )}/un) = R$ ${subtotal.toFixed(2)}\n`;
+      )}/un) = R$ ${itemSubtotal.toFixed(2)}\n`;
     });
     text += `-------------------------------------\n`;
-    text += `*Valor Total:* R$ ${calculateTotal().toFixed(2)}`;
+    if (taxaEntrega > 0) text += `*Taxa de entrega:* R$ ${taxaEntrega.toFixed(2)}\n`;
+    text += `*Valor Total:* R$ ${total.toFixed(2)}`;
     return text;
   };
 
@@ -47,6 +69,21 @@ export const OrderPreview: React.FC<OrderPreviewProps> = ({ supplierName, items,
   const handleWhatsAppShare = () => {
     const text = encodeURIComponent(generateMessageText());
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
+
+  const handleRegistrarClick = async () => {
+    if (!onConfirmOrder) return;
+    if (abaixoDoMinimo && !confirmandoAbaixoMinimo) {
+      setConfirmandoAbaixoMinimo(true);
+      return;
+    }
+    setRegistrando(true);
+    try {
+      await onConfirmOrder();
+      setRegistrado(true);
+    } finally {
+      setRegistrando(false);
+    }
   };
 
   return (
@@ -79,12 +116,30 @@ export const OrderPreview: React.FC<OrderPreviewProps> = ({ supplierName, items,
           ))}
         </div>
 
+        {abaixoDoMinimo && (
+          <div className="flex items-start gap-2 text-xs text-amber-400 bg-amber-950/30 p-3 rounded-xl border border-amber-900">
+            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+            <span>
+              O subtotal (R$ {subtotal.toFixed(2)}) está abaixo do pedido mínimo deste fornecedor (R${' '}
+              {pedidoMinimo.toFixed(2)}). Você pode prosseguir mesmo assim, mediante confirmação.
+            </span>
+          </div>
+        )}
+
         {/* Total Price summary */}
-        <div className="flex justify-between items-baseline border-t border-stone-800 pt-3">
-          <span className="text-xs text-stone-400 font-bold uppercase">Total Estimado</span>
-          <span className="text-xl font-bold text-amber-500">
-            R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </span>
+        <div className="space-y-1 border-t border-stone-800 pt-3">
+          {taxaEntrega > 0 && (
+            <div className="flex justify-between items-baseline text-xs text-stone-400">
+              <span>Taxa de entrega</span>
+              <span>R$ {taxaEntrega.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between items-baseline">
+            <span className="text-xs text-stone-400 font-bold uppercase">Total Estimado</span>
+            <span className="text-xl font-bold text-amber-500">
+              R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </span>
+          </div>
         </div>
 
         {/* Action Buttons */}
@@ -104,6 +159,23 @@ export const OrderPreview: React.FC<OrderPreviewProps> = ({ supplierName, items,
             Enviar WhatsApp
           </button>
         </div>
+
+        {onConfirmOrder && (
+          <button
+            onClick={handleRegistrarClick}
+            disabled={registrando || registrado}
+            className="w-full py-3 bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-stone-900 text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            <ClipboardCheck size={16} />
+            {registrado
+              ? 'Pedido registrado!'
+              : registrando
+              ? 'Registrando...'
+              : abaixoDoMinimo && !confirmandoAbaixoMinimo
+              ? 'Prosseguir abaixo do mínimo'
+              : 'Registrar Pedido (Simulado)'}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,9 +1,21 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Projeto:** Sistema de Inventário e WMS (Padaria)
-**Versão:** 3.0
-**Data:** 2026-08-12
+**Versão:** 3.2
+**Data:** 2026-08-13
 **Stack alvo:** Supabase (PostgreSQL + Auth) + React (SPA/PWA) + Web Speech API (voz)
+
+> **Notas da v3.1:** documenta a implementação real do login operacional (sessão
+> anônima do Supabase Auth por trás do PIN — ver 2.2.2) e a suíte de testes E2E
+> (Playwright) já implementada para a área operacional (ver RNF-04).
+>
+> **Notas da v3.2:** estende o mesmo mecanismo de sessão cacheada para o login
+> de gestão (2.2.1) — a sessão real (Google OAuth) também não sobrevivia a um
+> reload antes desta versão. Documenta a suíte de testes (unit + integração +
+> e2e) agora cobrindo a área gerencial, a infraestrutura de teste dedicada
+> (conta `gestao` de teste, RNF-04) e um **gap conhecido de deploy**: quatro
+> RPCs da migração `20260813150000_onda2_lifecycle_and_gaps.sql` não estavam
+> aplicadas no ambiente usado para validar esta versão (ver 7.4).
 
 > Este documento descreve o comportamento exigido do sistema com detalhe
 > suficiente para reimplementá-lo na stack Supabase + React. As seções 6
@@ -51,10 +63,29 @@ O sistema utiliza dois mecanismos de autenticação distintos:
 
 #### 2.2.1 Gestão — Google OAuth 2.0
 
-- Autenticação via Supabase Auth, exclusivamente com **Google OAuth 2.0**.
-- Não existe login por e-mail/senha.
+- Autenticação via Supabase Auth, exclusivamente com **Google OAuth 2.0** no fluxo real de produção.
+- Não existe login por e-mail/senha **para usuários finais** — a exceção é a conta de teste dedicada usada só pela suíte automatizada (ver RNF-04), que nunca aparece na UI.
 - Pode haver múltiplos gestores. O papel `gestao` é o nível mais alto do sistema (não existe superadmin).
 - Apenas um gestor existente pode cadastrar novos usuários e atribuir papéis.
+
+**Implementação (persistência de sessão):**
+
+- Assim como a sessão anônima do PIN (2.2.2), o client Supabase roda com
+  `persistSession: false` — por padrão isso significa que um reload da página
+  perde a sessão OAuth em memória, mesmo com o papel (`gestao`) ainda salvo em
+  `localStorage`. Sem correção, isso desloga o gestor a cada F5/reabertura do
+  PWA.
+- A correção cacheia manualmente os tokens da sessão real (chave própria,
+  separada da sessão anônima) e os restaura via `setSession()` em cada
+  carregamento da página, com o mesmo mecanismo usado para o PIN — só que,
+  diferente da sessão anônima, se o cache estiver ausente ou o refresh token
+  tiver expirado, a sessão de gestão **não pode ser reemitida automaticamente**
+  (só o login OAuth real faz isso): o usuário é deslogado e precisa entrar de
+  novo.
+- Chamadas concorrentes de restauração (ex.: o efeito de montagem do React
+  rodando duas vezes sob StrictMode em desenvolvimento) precisam ser
+  deduplicadas — o Supabase rotaciona o refresh token a cada uso, então duas
+  tentativas simultâneas com o mesmo token fariam a segunda falhar por engano.
 
 #### 2.2.2 Operação — PIN compartilhado
 
@@ -63,6 +94,25 @@ O sistema utiliza dois mecanismos de autenticação distintos:
 - O PIN é configurado pelo gestor na tela de configurações.
 - O PIN é validado contra a configuração armazenada no banco.
 - Há um único celular da padaria compartilhado entre os funcionários para a operação.
+
+**Implementação (sessão anônima por trás do PIN):**
+
+- O PIN em si não gera uma sessão de autenticação — quem autentica a
+  requisição contra o Postgres é uma **sessão anônima do Supabase Auth**
+  (`signInAnonymously`), necessária porque as políticas de RLS das tabelas
+  operacionais exigem `TO authenticated`. O papel de acesso (`operacional`)
+  fica em `localStorage`, independente dessa sessão.
+- Essa sessão anônima é **cacheada e reaproveitada** entre logins e reloads
+  (tokens salvos em `localStorage`, restaurados via `setSession`), em vez de
+  criar um usuário anônimo novo a cada PIN digitado. Isso é necessário porque
+  o Supabase limita a taxa de criação de usuários anônimos por projeto — um
+  turno com vários logins/reloads no mesmo celular esgotaria essa cota se
+  cada um criasse uma conta nova.
+- O gatilho de whitelist do login de gestão (`handle_new_user`, ver 2.3) deve
+  ignorar explicitamente sessões anônimas (`new.is_anonymous`) — caso
+  contrário, ele rejeita a criação do usuário anônimo por não haver e-mail
+  correspondente na tabela `usuarios`, quebrando o login operacional por
+  completo com erro 500 ("Database error creating anonymous user").
 
 ### 2.3 Perfis e autorização
 
@@ -444,11 +494,11 @@ Domínios modelados como enums em Postgres:
 | Listar turnos ativos      | `select`         | `turnos` (filtro `ativo=SIM`, order by `ordem`) | Cache offline |
 | Iniciar turno             | `rpc`            | `iniciar_turno(data, id_turno)`  | Idempotente |
 | Gravar contagem de setor  | `insert/upsert`  | `lancamentos_itens`              | Via lançamento ativo |
-| Encerrar turno            | `rpc`            | `encerrar_turno(id_lancamento, justificativa?)` | Valida setores pendentes |
+| Encerrar turno            | `rpc`            | `encerrar_turno(id_lancamento, justificativa?)` | Valida setores pendentes. ⚠️ Ver 7.4 |
 | Lançar sobra/perda        | `insert`         | `lancamentos_op` + `lancamentos_itens` | Tipo `Sobra` ou `Perda` |
 | Registrar recebimento     | `insert`         | `recebimentos_itens`             | Com ou sem pedido vinculado |
 | Lançar débito (fiado)     | `insert`         | `credito_movimentos`             | Valida limite global |
-| Consultar estoque público | `rpc`            | `consultar_estoque()`            | Payload reduzido |
+| Consultar estoque público | `rpc`            | `consultar_estoque()`            | Payload reduzido. ⚠️ Ver 7.4 |
 
 #### Gestão (sessão Google OAuth)
 
@@ -460,20 +510,29 @@ Domínios modelados como enums em Postgres:
 | CRUD Fornecedores         | `select/insert/update` | `fornecedores`             | Soft delete |
 | CRUD Funcionários         | `select/insert/update` | `funcionarios`             | Soft delete |
 | CRUD Preços               | `select/insert/update/delete` | `produtos_fornecedores` | Exclusão física |
-| Cálculo de consumo        | `rpc`            | `calcular_consumo()`             | View ou function |
-| Sugestão de compra        | `rpc`            | `sugestao_compra()`              | Usa fórmula WMS |
+| Cálculo de consumo        | `select`         | `view_dashboard_estoques` (coluna `consumo_periodo`) | Implementado como VIEW (função helper `get_consumo_periodo`), não RPC própria — ver nota abaixo |
+| Sugestão de compra        | `select`         | `view_dashboard_estoques` (coluna `quantidade_sugerida`) | Idem — fórmula RF-15 embutida na VIEW via `get_sugestao_compra` |
 | Gerar pedido              | `insert`         | `pedidos_compra` + `pedidos_itens` | Status `Simulado` |
 | Marcar como enviado       | `update`         | `pedidos_compra`                 | Status → `Enviado` |
 | Cancelar pedido           | `update`         | `pedidos_compra`                 | Exceto `Recebido` |
-| Conferir recebimento      | `rpc`            | `conferir_recebimento(id_pedido, itens[])` | Classifica divergências |
-| Reabrir setor/turno       | `rpc`            | `reabrir_turno(id_lancamento)`   | Volta para `EM ANDAMENTO` |
+| Conferir recebimento      | `rpc`            | `conferir_recebimento(id_pedido, itens[])` | Classifica divergências. ⚠️ Ver 7.4 |
+| Reabrir setor/turno       | `rpc`            | `reabrir_turno(id_lancamento)`   | Volta para `EM ANDAMENTO`. ⚠️ Ver 7.4 |
 | Quitação de fiado         | `insert`         | `credito_movimentos`             | Tipo `Quitação` |
 | Editar/excluir movimento  | `update/delete`  | `credito_movimentos`             | Confirmação dupla (frontend) |
-| Dashboard estoques        | `rpc`            | `dashboard_estoques()`           | View materializada ou function |
-| Dashboard fiados          | `rpc`            | `dashboard_fiados()`             | Agregações |
-| Dashboard operacional     | `rpc`            | `dashboard_operacional(data)`    | Status dinâmico de todos os turnos ativos |
+| Dashboard estoques        | `select`         | `view_dashboard_estoques`        | Implementado como VIEW, não RPC `dashboard_estoques()` |
+| Dashboard fiados          | `select`         | `credito_movimentos` + agregação no frontend | Não existe RPC `dashboard_fiados()` — `CreditManagement.tsx` calcula saldo no cliente |
+| Dashboard operacional     | `select`         | `turnos` + `lancamentos_op` + `buildTurnosDoDia()` (frontend) | Não existe RPC `dashboard_operacional()` — status dos turnos é derivado no cliente (ver `operationalDay.ts`), mesma lógica usada por `TurnosStatusPanel` e `GestaoTurnosDia` |
 | Configurações (ler/salvar)| `select/update`  | `configuracoes`                  | Chave-valor |
 | Gerenciar usuários        | `select/insert/update` | `usuarios`                 | Apenas gestores |
+
+> **Nota (v3.2):** as RPCs `calcular_consumo`, `sugestao_compra`, `dashboard_estoques`,
+> `dashboard_fiados` e `dashboard_operacional` descritas nas versões anteriores
+> deste PRD nunca foram implementadas como funções — o caminho real adotado foi
+> uma VIEW (`view_dashboard_estoques`, ver 6.2) para estoque/consumo/sugestão, e
+> agregação no próprio frontend para os dashboards de fiado e operacional. Isso
+> é uma escolha de implementação válida (não um bug), mas diverge do contrato
+> originalmente desenhado aqui — a tabela acima já reflete o que existe de
+> fato.
 
 ### 7.3 Edge Functions
 
@@ -481,6 +540,35 @@ Domínios modelados como enums em Postgres:
 |---------------------------|--------------------------|-----------|
 | `enviar_email_fechamento` | Chamada via webhook ou cron | Envia e-mail ao encerrar último turno do dia |
 | `enviar_push_notification`| Chamada por eventos      | Push notification para turnos atrasados, pedidos entregues |
+
+### 7.4 Gap conhecido: migração não aplicada em produção (v3.2)
+
+Testes de integração (RNF-04) descobriram que 4 funções definidas em
+`supabase/migrations/20260813150000_onda2_lifecycle_and_gaps.sql` **não
+existem no schema cache do projeto Supabase** usado para validar esta versão,
+apesar do arquivo estar no repositório:
+
+| RPC | Erro observado | Impacto |
+|-----|-----------------|---------|
+| `encerrar_turno` | `PGRST202` (função não encontrada) | RF-07 quebrado: o botão "Encerrar Turno" na tela de Inventário nunca conclui, turnos ficam presos em `EM ANDAMENTO` |
+| `reabrir_turno` | `PGRST202` | RF-21 quebrado: gestão não consegue reabrir setor/turno |
+| `consultar_estoque` | `PGRST202` | RF-10 quebrado: Consulta de Estoque operacional sempre volta vazia (a UI mascara isso mostrando "Nenhum produto encontrado", sem indicar erro) |
+| `conferir_recebimento` | `PGRST202` | RF-09/RF-17 quebrado: Recebimento (avulso e vinculado a pedido) não registra conferência |
+
+A mesma migração também adiciona a constraint `UNIQUE(id_lancamento, id_produto)`
+em `lancamentos_itens` e o trigger `check_lancamento_editable` — sem eles, o
+upsert de contagem do Inventário (RF-07: "reaproveita o mesmo lançamento,
+nunca cria outro") pode estar inserindo linhas duplicadas em vez de
+atualizar, e a proteção de "setor concluído só editável pelo gestor" (RF-06)
+não está ativa.
+
+**Ação necessária:** aplicar essa migração ao projeto Supabase (via
+`supabase db push` com o projeto linkado, ou colando o SQL diretamente no
+SQL Editor do painel). Os testes de integração
+(`tests/integration/rls-gestao.test.ts`,
+`tests/integration/gestao-crud.test.ts`) têm casos que ficam vermelhos de
+propósito até isso ser corrigido, servindo como verificação de que a correção
+foi aplicada.
 
 ---
 
@@ -581,9 +669,74 @@ Para cada turno ativo com ordem < N (consultando tabela `turnos`):
 
 ### RNF-04 | Testes
 
-- **Testes unitários:** regras de cálculo (estoque, consumo, sugestão WMS, self-healing, saldo de fiado).
-- **Testes de integração:** fluxos completos com Supabase (RLS, CRUD, transições de status).
-- **Testes E2E:** Cypress ou Playwright para fluxos críticos (inventário por turno, recebimento, fiado).
+- **Testes unitários** (`npm test`, Vitest, `src/**/*.test.ts`): regras de
+  cálculo puras — sugestão de compra WMS (`mathCalculations.test.ts`), saldo
+  de fiado (`fiadoCalculations.test.ts`), fuzzy matching de voz
+  (`fuzzyMatcher.test.ts`) e o ciclo de vida/self-healing de turnos
+  (`operationalDay.test.ts`: bloqueio sequencial RF-02, self-healing RF-08,
+  janela do dia operacional). Não dependem de rede.
+
+- **Testes de integração** (`npm run test:integration`, Vitest,
+  `tests/integration/**/*.test.ts`, config própria em
+  `vitest.integration.config.ts` — roda separado do `npm test` por depender
+  de rede e do estado real do projeto Supabase):
+  - `rls-gestao.test.ts` — caminho **negativo**: confirma que uma sessão
+    operacional (anônima) é bloqueada pela RLS em toda tabela/RPC exclusiva
+    da gestão (INSERT/UPDATE em `setores`, `produtos`, `turnos`,
+    `fornecedores`, `funcionarios`, `configuracoes`, `usuarios`,
+    `pedidos_compra`, `produtos_fornecedores`; SELECT vazio em
+    `configuracoes`/`usuarios`; `credito_movimentos` só aceita os tipos
+    permitidos à operação; `reabrir_turno` recusa com mensagem explícita).
+  - `gestao-crud.test.ts` — caminho **positivo**: autenticado como a conta de
+    teste `gestao` (ver abaixo), confirma que a RLS de fato libera CRUD em
+    setores, configurações, fornecedores/pedidos e lançamentos de
+    fiado/quitação.
+  - Ambos os arquivos têm casos que dependem das RPCs do gap descrito em 7.4
+    (`reabrir_turno`, `consultar_estoque`) — ficam vermelhos de propósito até
+    a migração ser aplicada.
+
+- **Testes E2E** (`npm run test:e2e`, Playwright, `tests/e2e/`), rodando
+  contra o backend real (não mockado):
+  - **Área operacional:** login por PIN (sucesso, PIN inválido, persistência
+    entre reloads, logout, recuperação após tentativa inválida —
+    `auth-validation.spec.ts`, `login-flow.spec.ts`); dashboard, atalhos
+    rápidos e restrição de nav por perfil (`dashboard-flow.spec.ts`);
+    inventário por turno — contagem, "Zerar Contagem", fechamento forçado
+    (`inventario-flow.spec.ts`, via fallback mock); fiado
+    (`fiado-flow.spec.ts`); sobras/perdas (`sobras-perdas-flow.spec.ts`);
+    consulta de estoque (`consulta-estoque-flow.spec.ts`); recebimento avulso
+    (`recebimento-flow.spec.ts`).
+  - **Área gerencial:** autenticação como gestão, `/config` e `/wms`
+    acessíveis, sessão sobrevivendo a reload, logout
+    (`gestao-auth-flow.spec.ts`); CRUD de Setores ponta-a-ponta — criar,
+    listar, desativar (`gestao-crud-flow.spec.ts`); dashboard WMS e preview
+    de pedido para WhatsApp (`gestao-wms-flow.spec.ts`); controle de acesso
+    (usuário não autenticado não acessa rotas de gestão —
+    `crud-flow.spec.ts`, `wms-flow.spec.ts`).
+  - **Login de gestão em teste automatizado:** o fluxo real é Google OAuth,
+    não automatizável. A suíte usa uma conta de teste dedicada
+    (`e2e-gestao-test@padaria.local`, role `gestao`, pré-whitelisted),
+    provisionada por `scripts/setup-test-gestor.mjs` (idempotente, requer
+    `SUPABASE_SERVICE_ROLE_KEY` em `.env.local` — nunca commitada, nunca
+    usada em código de cliente). O teste autentica essa conta por e-mail/senha
+    e injeta a sessão no navegador via `#access_token=...` na URL — o mesmo
+    mecanismo de detecção de sessão que o Supabase Auth usa em redirects de
+    magic link / recuperação de senha, então nenhum código de produção
+    precisa expor o client Supabase para isso (`loginAsGestor()` em
+    `tests/e2e/helpers.ts`).
+  - **Concorrência limitada (`workers: 2`):** cada teste roda em um browser
+    context isolado, sem a sessão anônima cacheada compartilhada entre eles
+    (ver 2.2.2); muitos workers em paralelo disparam `signInAnonymously()`
+    simultâneos e esbarram no rate limit de criação de usuários anônimos do
+    Supabase. Rodar a suíte operacional inteira de uma vez ainda pode
+    esbarrar nesse limite mesmo com `workers: 2` — ver RNF-06.
+  - **Gap conhecido:** a tabela `produtos` está vazia no ambiente usado para
+    validar esta suíte, então os fluxos que dependem de produtos reais
+    (seleção de setor no Inventário, envio de Sobra/Perda, catálogo do
+    Recebimento avulso) pulam automaticamente (`test.skip`) com uma mensagem
+    explicando o motivo, em vez de falhar. Populando
+    `produtos`/`setores`/`turnos` via o CRUD de gestão, esses testes passam a
+    exercitar o fluxo real completo.
 
 ### RNF-05 | Deploy e CI/CD
 
@@ -593,9 +746,17 @@ Para cada turno ativo com ordem < N (consultando tabela `turnos`):
 
 ### RNF-06 | Segurança
 
-- Autenticação Google OAuth 2.0 exclusiva (gestão).
+- Autenticação Google OAuth 2.0 exclusiva (gestão) em produção — a única
+  exceção é a conta de teste e-mail/senha usada pela suíte automatizada (ver
+  RNF-04), que não é exposta em nenhuma tela do app.
 - PIN operacional validado contra banco (não hardcoded).
 - HTTPS obrigatório.
+- Whitelist de e-mail (`handle_new_user`) bloqueia contas de gestão não pré-cadastradas, mas **deve ignorar sessões anônimas** (`new.is_anonymous`) — do contrário, quebra o login operacional (ver 2.2.2).
+- **Rate limit de sign-ins anônimos:** o Supabase limita quantos usuários anônimos podem ser criados por período no projeto. Configurar esse limite (Authentication → Rate Limits) com folga suficiente para o volume real de logins/reloads operacionais esperado, já que a sessão anônima é reaproveitada mas ainda pode expirar e precisar ser recriada. **Confirmado na prática:** mesmo o volume gerado pela suíte de testes E2E esbarra nesse limite por padrão — é um indício de que o limite default do projeto está baixo demais também para o uso real esperado em produção (vários operadores/reloads ao longo do turno) e deveria ser revisto antes do lançamento.
+- **Service role key** (acesso administrativo total, contorna RLS): usada
+  apenas em `scripts/setup-test-gestor.mjs` (Node, fora do bundle do
+  cliente), guardada em `SUPABASE_SERVICE_ROLE_KEY` dentro de `.env.local`
+  (nunca commitado). Nunca deve ser referenciada em código de `src/`.
 
 ---
 

@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+/*
+ * O app usa alguns tons intermediários da paleta "stone" (750, 850, 855)
+ * que não existem na escala padrão do Tailwind v4 (...700, 800, 900...).
+ * Sem esse bloco @theme, essas classes (bg-stone-850, border-stone-750 etc.,
+ * usadas em praticamente todas as telas) não geram nenhum CSS e os
+ * elementos ficam sem cor de fundo/borda.
+ */
+@theme {
+  --color-stone-750: #3a3532;
+  --color-stone-850: #211d1b;
+  --color-stone-855: #1f1b19;
+}

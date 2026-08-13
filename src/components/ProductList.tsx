@@ -17,9 +17,10 @@ interface ProductListProps {
   products: Product[];
   items: Record<string, InventoryItem>;
   onCountChange: (productId: string, field: 'qtd_loja' | 'qtd_estoque', val: number) => void;
+  readOnly?: boolean;
 }
 
-export const ProductList: React.FC<ProductListProps> = ({ products, items, onCountChange }) => {
+export const ProductList: React.FC<ProductListProps> = ({ products, items, onCountChange, readOnly = false }) => {
   const getItemValue = (productId: string, field: 'qtd_loja' | 'qtd_estoque') => {
     return items[productId]?.[field] ?? 0;
   };
@@ -35,7 +36,9 @@ export const ProductList: React.FC<ProductListProps> = ({ products, items, onCou
       {products.map((product) => (
         <div
           key={product.id_produto}
-          className="bg-stone-850 p-4 rounded-xl border border-stone-800 space-y-3 shadow-md"
+          className={`bg-stone-850 p-4 rounded-xl border border-stone-800 space-y-3 shadow-md ${
+            readOnly ? 'opacity-70' : ''
+          }`}
         >
           {/* Header Product Info */}
           <div className="flex items-baseline justify-between border-b border-stone-800 pb-2">
@@ -50,23 +53,26 @@ export const ProductList: React.FC<ProductListProps> = ({ products, items, onCou
               <label className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Loja</label>
               <div className="flex items-center justify-between bg-stone-900 border border-stone-800 rounded-lg p-1">
                 <button
+                  disabled={readOnly}
                   onClick={() => adjustCount(product.id_produto, 'qtd_loja', -1)}
-                  className="p-1.5 hover:bg-stone-800 rounded text-stone-400 hover:text-stone-100 transition-colors"
+                  className="p-1.5 hover:bg-stone-800 rounded text-stone-400 hover:text-stone-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                 >
                   <Minus size={14} />
                 </button>
                 <input
                   type="number"
                   min="0"
+                  disabled={readOnly}
                   value={getItemValue(product.id_produto, 'qtd_loja')}
                   onChange={(e) =>
                     onCountChange(product.id_produto, 'qtd_loja', parseFloat(e.target.value) || 0)
                   }
-                  className="w-12 bg-transparent text-center text-sm font-semibold text-stone-200 focus:outline-none"
+                  className="w-12 bg-transparent text-center text-sm font-semibold text-stone-200 focus:outline-none disabled:opacity-60"
                 />
                 <button
+                  disabled={readOnly}
                   onClick={() => adjustCount(product.id_produto, 'qtd_loja', 1)}
-                  className="p-1.5 hover:bg-stone-800 rounded text-stone-400 hover:text-stone-100 transition-colors"
+                  className="p-1.5 hover:bg-stone-800 rounded text-stone-400 hover:text-stone-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                 >
                   <Plus size={14} />
                 </button>
@@ -78,23 +84,26 @@ export const ProductList: React.FC<ProductListProps> = ({ products, items, onCou
               <label className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Estoque (Retaguarda)</label>
               <div className="flex items-center justify-between bg-stone-900 border border-stone-800 rounded-lg p-1">
                 <button
+                  disabled={readOnly}
                   onClick={() => adjustCount(product.id_produto, 'qtd_estoque', -1)}
-                  className="p-1.5 hover:bg-stone-800 rounded text-stone-400 hover:text-stone-100 transition-colors"
+                  className="p-1.5 hover:bg-stone-800 rounded text-stone-400 hover:text-stone-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                 >
                   <Minus size={14} />
                 </button>
                 <input
                   type="number"
                   min="0"
+                  disabled={readOnly}
                   value={getItemValue(product.id_produto, 'qtd_estoque')}
                   onChange={(e) =>
                     onCountChange(product.id_produto, 'qtd_estoque', parseFloat(e.target.value) || 0)
                   }
-                  className="w-12 bg-transparent text-center text-sm font-semibold text-stone-200 focus:outline-none"
+                  className="w-12 bg-transparent text-center text-sm font-semibold text-stone-200 focus:outline-none disabled:opacity-60"
                 />
                 <button
+                  disabled={readOnly}
                   onClick={() => adjustCount(product.id_produto, 'qtd_estoque', 1)}
-                  className="p-1.5 hover:bg-stone-800 rounded text-stone-400 hover:text-stone-100 transition-colors"
+                  className="p-1.5 hover:bg-stone-800 rounded text-stone-400 hover:text-stone-100 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
                 >
                   <Plus size={14} />
                 </button>
@@ -103,16 +112,18 @@ export const ProductList: React.FC<ProductListProps> = ({ products, items, onCou
           </div>
 
           {/* Quick Zero Button */}
-          <button
-            onClick={() => {
-              onCountChange(product.id_produto, 'qtd_loja', 0);
-              onCountChange(product.id_produto, 'qtd_estoque', 0);
-            }}
-            className="w-full py-1.5 bg-stone-900/50 hover:bg-stone-800 text-[10px] text-stone-500 hover:text-amber-500 font-bold uppercase tracking-wider rounded-lg border border-stone-800/80 transition-all flex items-center justify-center gap-1"
-          >
-            <RotateCcw size={12} />
-            Zerar Contagem
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => {
+                onCountChange(product.id_produto, 'qtd_loja', 0);
+                onCountChange(product.id_produto, 'qtd_estoque', 0);
+              }}
+              className="w-full py-1.5 bg-stone-900/50 hover:bg-stone-800 text-[10px] text-stone-500 hover:text-amber-500 font-bold uppercase tracking-wider rounded-lg border border-stone-800/80 transition-all flex items-center justify-center gap-1"
+            >
+              <RotateCcw size={12} />
+              Zerar Contagem
+            </button>
+          )}
         </div>
       ))}
     </div>

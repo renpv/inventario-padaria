@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
+import { enqueueOfflineAction } from '../services/offlineQueue';
 
 export const Fiado: React.FC = () => {
   const [funcionarios, setFuncionarios] = useState<{ id_funcionario: string; nome: string }[]>([]);
@@ -34,24 +35,53 @@ export const Fiado: React.FC = () => {
     if (!selectedFunc || !valor || Number(valor) <= 0) return;
     if (tipoDebito === 'Retirada de produto' && !selectedProd) return;
 
-    try {
-      const { error } = await supabase.from('credito_movimentos').insert({
-        id_funcionario: selectedFunc,
-        tipo: tipoDebito,
-        id_produto: tipoDebito === 'Retirada de produto' ? selectedProd : null,
-        valor: Number(valor),
-        observacao: observacao || null
-      });
+    const payload = {
+      id_funcionario: selectedFunc,
+      tipo: tipoDebito,
+      id_produto: tipoDebito === 'Retirada de produto' ? selectedProd : null,
+      valor: Number(valor),
+      observacao: observacao || null,
+    };
 
-      if (error) throw error;
-
-      alert('Lançamento realizado com sucesso!');
+    const resetForm = () => {
       setSelectedFunc('');
       setValor('');
       setObservacao('');
       setSelectedProd('');
-    } catch (err: any) {
-      alert('Erro ao registrar: ' + err.message);
+    };
+
+    if (!navigator.onLine) {
+      await enqueueOfflineAction('credito_movimentos', 'INSERT', payload);
+      alert('Sem conexão: o lançamento foi salvo e será sincronizado automaticamente quando a rede voltar.');
+      resetForm();
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('credito_movimentos').insert(payload);
+
+      if (error) {
+        if (error.code) {
+          // Rejeição de negócio vinda do servidor (ex.: limite de fiado excedido).
+          // Não deve ser reenfileirada, pois falharia da mesma forma ao sincronizar.
+          alert('Não foi possível registrar: ' + error.message);
+          return;
+        }
+        // Sem código de erro do Postgres: provável falha de conectividade em pleno voo.
+        console.error('Failed to insert credito_movimento, queueing for retry:', error);
+        await enqueueOfflineAction('credito_movimentos', 'INSERT', payload);
+        alert('Falha de conexão: o lançamento foi salvo e será sincronizado automaticamente.');
+        resetForm();
+        return;
+      }
+
+      alert('Lançamento realizado com sucesso!');
+      resetForm();
+    } catch (err) {
+      console.error('Unexpected error while launching fiado debit, queueing for retry:', err);
+      await enqueueOfflineAction('credito_movimentos', 'INSERT', payload);
+      alert('Falha inesperada: o lançamento foi salvo e será sincronizado automaticamente.');
+      resetForm();
     }
   };
 

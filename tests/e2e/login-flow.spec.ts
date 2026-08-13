@@ -1,42 +1,35 @@
 import { test, expect } from '@playwright/test';
+import { loginAsOperator } from './helpers';
 
 test.describe('Login and Inventory Flow', () => {
-  test('should login with valid PIN and navigate to inventory', async ({ page }) => {
-    // Navigate to the login page (or root which redirects to login)
-    await page.goto('/');
+  test('should login with valid PIN and navigate through inventory sector selection', async ({ page }) => {
+    await loginAsOperator(page);
 
-    // Wait for redirect to login
-    await expect(page).toHaveURL(/.*\/login/);
-
-    // Assert login page elements
-    await expect(page.getByText('Acesso ao Sistema')).toBeVisible();
-
-    // Enter PIN '1234'
-    const pinInput = page.getByPlaceholder('••••');
-    await pinInput.fill('1234');
-    
-    // Click login button
-    await page.getByRole('button', { name: /entrar como operador/i }).click();
-
-    // Verify successful login and redirect to dashboard
-    await expect(page).toHaveURL('http://localhost:5173/');
-    
-    // Assert dashboard elements
-    await expect(page.getByText('Painel Principal')).toBeVisible();
-
-    // Click on 'Inventário'
+    // Click on 'Inventário' (bottom nav)
     await page.getByRole('link', { name: /inventário/i }).click();
+    await expect(page).toHaveURL(/.*\/inventario$/);
+    await expect(page.getByRole('heading', { name: /iniciar inventário/i })).toBeVisible();
 
-    // Verify navigation to sector selector
-    await expect(page).toHaveURL(/.*\/inventario/);
+    // Aguarda a lista de setores carregar e seleciona o primeiro disponível
+    // (não assumimos um turno/setor específico pois o estado é real e pode
+    // variar conforme lançamentos já feitos no dia operacional).
+    const sectorButtons = page.locator('main').getByRole('button').filter({ hasText: /Contar|Concluído/ });
+    const hasSectors = await sectorButtons
+      .first()
+      .waitFor({ state: 'visible', timeout: 10000 })
+      .then(() => true)
+      .catch(() => false);
 
-    // Select 'Padaria'
-    await page.getByRole('button', { name: /padaria/i }).click();
+    if (!hasSectors) {
+      // Nenhum setor com produtos cadastrados neste ambiente (tabela
+      // `produtos` vazia) — não há como prosseguir para a contagem real.
+      // Cobrimos esse fluxo separadamente via mock em inventario-flow.spec.ts.
+      test.skip(true, 'Nenhum setor com produtos cadastrados neste ambiente.');
+    }
+    await sectorButtons.first().click();
 
-    // Verify navigation to shift inventory
-    await expect(page).toHaveURL(/.*\/inventario\/.*\/1/);
-
-    // Verify inventory elements
+    // Verify navigation to shift inventory (ids reais são UUID, não assumimos formato)
+    await expect(page).toHaveURL(/\/inventario\/[^/]+\/[^/]+$/);
     await expect(page.getByText('Contagem de Estoque')).toBeVisible({ timeout: 15000 });
   });
 
@@ -45,10 +38,9 @@ test.describe('Login and Inventory Flow', () => {
 
     const pinInput = page.getByPlaceholder('••••');
     await pinInput.fill('9999');
-    
+
     await page.getByRole('button', { name: /entrar como operador/i }).click();
 
-    // Verify error message
     await expect(page.getByText('PIN incorreto. Tente novamente.')).toBeVisible();
   });
 });

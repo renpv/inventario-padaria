@@ -10,7 +10,7 @@ export const useIndexedDB = <T>(key: string, initialData: T) => {
       try {
         const saved = await getLocalDraft(key);
         if (saved !== null) {
-          setData(saved);
+          setData(saved as T);
         }
       } catch (err) {
         console.error('Failed to load draft from IndexedDB:', err);
@@ -23,7 +23,7 @@ export const useIndexedDB = <T>(key: string, initialData: T) => {
 
   const updateData = async (newData: T | ((prev: T) => T)) => {
     setData((prev) => {
-      const resolved = typeof newData === 'function' ? (newData as Function)(prev) : newData;
+      const resolved = typeof newData === 'function' ? (newData as (prev: T) => T)(prev) : newData;
       saveLocalDraft(key, resolved).catch((err) =>
         console.error('Failed to save draft to IndexedDB:', err)
       );
