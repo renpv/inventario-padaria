@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { ArrowLeft, Plus, Save, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -16,16 +16,16 @@ export const SetoresCrud: React.FC = () => {
   const [idEdit, setIdEdit] = useState<string | null>(null);
   const [nome, setNome] = useState('');
 
-  useEffect(() => {
-    fetchSetores();
-  }, []);
-
-  const fetchSetores = async () => {
+  const fetchSetores = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from('setores').select('*').order('nome_setor');
     if (data) setSetores(data as Setor[]);
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchSetores();
+  }, [fetchSetores]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

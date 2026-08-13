@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { ArrowLeft, Plus, Save, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -31,13 +31,9 @@ export const ProdutosCrud: React.FC = () => {
   const [minimo, setMinimo] = useState(0);
   const [periodicidade, setPeriodicidade] = useState(7); // dias
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    
+
     // Fetch Setores for select
     const resSetores = await supabase.from('setores').select('*').eq('ativo', 'SIM').order('nome_setor');
     if (resSetores.data) {
@@ -54,10 +50,17 @@ export const ProdutosCrud: React.FC = () => {
         setores ( nome_setor )
       `)
       .order('nome_produto');
-      
-    if (resProdutos.data) setProdutos(resProdutos.data as any);
+
+    if (resProdutos.data) setProdutos(resProdutos.data as Produto[]);
     setLoading(false);
-  };
+    // idSetor lido só para um default "se ainda não setado" — não deve re-disparar o
+    // fetch quando ele muda (evita refetch redundante a cada seleção).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

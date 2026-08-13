@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { ArrowLeft, Plus, UserX, UserCheck, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -21,22 +21,22 @@ export const UsuariosCrud: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState<'gestao' | 'operacional'>('gestao');
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('usuarios')
       .select('*')
       .order('nome');
-    
+
     if (data && !error) {
       setUsers(data as UserRow[]);
     }
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,7 +113,7 @@ export const UsuariosCrud: React.FC = () => {
             <select
               className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-sm text-stone-200 focus:outline-none focus:border-amber-500"
               value={newRole}
-              onChange={(e) => setNewRole(e.target.value as any)}
+              onChange={(e) => setNewRole(e.target.value as 'gestao' | 'operacional')}
             >
               <option value="gestao">Gestão (Total)</option>
               <option value="operacional">Operacional (Restrito)</option>

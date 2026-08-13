@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { ArrowLeft, Save, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -14,11 +14,7 @@ export const ConfiguracoesCrud: React.FC = () => {
   const [limiteFiado, setLimiteFiado] = useState(0);
   const [pushAtivo, setPushAtivo] = useState(true);
 
-  useEffect(() => {
-    fetchConfigs();
-  }, []);
-
-  const fetchConfigs = async () => {
+  const fetchConfigs = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from('configuracoes').select('chave, valor');
     if (data) {
@@ -38,7 +34,11 @@ export const ConfiguracoesCrud: React.FC = () => {
       });
     }
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchConfigs();
+  }, [fetchConfigs]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

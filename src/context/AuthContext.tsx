@@ -274,6 +274,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// Co-localizado com AuthProvider de propósito (contexto + hook num único
+// arquivo) — só custa Fast Refresh perfeito em dev (HMR troca o componente
+// inteiro em vez de só a função). Não vale separar em outro arquivo só por
+// isso: todo consumidor de useAuth() teria que trocar o caminho do import.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

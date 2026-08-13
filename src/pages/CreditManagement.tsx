@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { StaffCreditHistory } from '../components/StaffCreditHistory';
 import { useAuth } from '../context/AuthContext';
@@ -15,11 +15,7 @@ export const CreditManagement: React.FC = () => {
   const [quitacaoObs, setQuitacaoObs] = useState('');
   const [quitacaoTipo, setQuitacaoTipo] = useState<'Quitação parcial' | 'Quitação total'>('Quitação parcial');
 
-  useEffect(() => {
-    fetchFuncionarios();
-  }, []);
-
-  const fetchFuncionarios = async () => {
+  const fetchFuncionarios = useCallback(async () => {
     setLoading(true);
     // Fetch all funcionários (active and inactive as per PRD for clearance)
     const { data: funcs, error: errFuncs } = await supabase
@@ -57,7 +53,11 @@ export const CreditManagement: React.FC = () => {
 
     setFuncionarios(funcsWithSaldo);
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchFuncionarios();
+  }, [fetchFuncionarios]);
 
   const handleQuitacao = async () => {
     if (!selectedId || !quitacaoValor || Number(quitacaoValor) <= 0) return;

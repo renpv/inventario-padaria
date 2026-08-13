@@ -40,7 +40,7 @@ O projeto Supabase de `.env` é o **mesmo usado em produção** (sem staging sep
 
 **CI:** `.github/workflows/ci.yml` roda lint + type-check + build + unit em todo push/PR. Integração e e2e **não** rodam em CI de propósito (mesmo Supabase de produção, sem staging — rodar automaticamente esbarra no rate limit) — sempre locais antes de mergear mudanças de auth/RLS/fluxos.
 
-⚠️ **Lint tem ~40 erros pré-existentes** (`react-hooks/set-state-in-effect`, `no-explicit-any`, etc.) espalhados por ~17 arquivos, principalmente CRUDs de gestão — CI fica vermelho até isso ser corrigido. Não é regressão desta sessão.
+Lint 100% limpo (2026-08-13). `react-hooks/set-state-in-effect` está **desligada** no `eslint.config.js` — dispara no padrão "fetch on mount" usado de propósito em ~15 componentes; justificativa no próprio arquivo de config.
 
 **Detalhes, troubleshooting e gerenciamento de tokens:** [DEPLOY.md](./DEPLOY.md).
 

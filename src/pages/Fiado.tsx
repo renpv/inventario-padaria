@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { enqueueOfflineAction } from '../services/offlineQueue';
 
@@ -14,11 +14,7 @@ export const Fiado: React.FC = () => {
   const [valor, setValor] = useState('');
   const [observacao, setObservacao] = useState('');
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const [funcsRes, prodsRes] = await Promise.all([
       supabase.from('funcionarios').select('id_funcionario, nome').eq('ativo', 'SIM').order('nome'),
@@ -28,7 +24,11 @@ export const Fiado: React.FC = () => {
     if (funcsRes.data) setFuncionarios(funcsRes.data);
     if (prodsRes.data) setProdutos(prodsRes.data);
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleLancar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +114,7 @@ export const Fiado: React.FC = () => {
             <select
               className="w-full bg-stone-900 border border-stone-700 rounded-lg p-3 text-stone-200 focus:outline-none focus:border-amber-500"
               value={tipoDebito}
-              onChange={(e) => setTipoDebito(e.target.value as any)}
+              onChange={(e) => setTipoDebito(e.target.value as 'Adiantamento' | 'Retirada de produto')}
             >
               <option value="Adiantamento">Adiantamento em Espécie</option>
               <option value="Retirada de produto">Retirada de Produto</option>

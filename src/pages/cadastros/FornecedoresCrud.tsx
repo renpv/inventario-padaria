@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { ArrowLeft, Plus, Save, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -20,16 +20,16 @@ export const FornecedoresCrud: React.FC = () => {
   const [minimo, setMinimo] = useState(0);
   const [frete, setFrete] = useState(0);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from('fornecedores').select('*').order('nome');
     if (data) setFornecedores(data as Fornecedor[]);
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

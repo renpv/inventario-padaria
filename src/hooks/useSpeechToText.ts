@@ -1,5 +1,40 @@
 import { useState, useEffect, useRef } from 'react';
 
+// A Web Speech API (SpeechRecognition) não faz parte do lib.dom padrão do
+// TypeScript — só o essencial usado aqui, em vez de puxar uma dependência de
+// tipos só para isso.
+interface SpeechRecognitionResultLike {
+  transcript: string;
+}
+interface SpeechRecognitionEventLike extends Event {
+  results: { [index: number]: { [index: number]: SpeechRecognitionResultLike } };
+}
+interface SpeechRecognitionErrorEventLike extends Event {
+  error: string;
+}
+interface SpeechRecognitionLike extends EventTarget {
+  continuous: boolean;
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onstart: (() => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+const getSpeechRecognitionConstructor = (): SpeechRecognitionConstructor | undefined => {
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return w.SpeechRecognition || w.webkitSpeechRecognition;
+};
+
 interface UseSpeechToTextProps {
   onTranscript: (text: string) => void;
 }
@@ -7,11 +42,10 @@ interface UseSpeechToTextProps {
 export const useSpeechToText = ({ onTranscript }: UseSpeechToTextProps) => {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = getSpeechRecognitionConstructor();
 
     if (!SpeechRecognition) {
       setError('Web Speech API não é suportada neste navegador.');
@@ -33,7 +67,7 @@ export const useSpeechToText = ({ onTranscript }: UseSpeechToTextProps) => {
       setIsListening(false);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
       if (event.error === 'aborted') {
         // Ignore aborted error silently, it happens normally when stopped or idle.
         setIsListening(false);
@@ -44,7 +78,7 @@ export const useSpeechToText = ({ onTranscript }: UseSpeechToTextProps) => {
       setIsListening(false);
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEventLike) => {
       const resultText = event.results[0][0].transcript;
       if (resultText) {
         onTranscript(resultText);
@@ -81,6 +115,6 @@ export const useSpeechToText = ({ onTranscript }: UseSpeechToTextProps) => {
     error,
     startListening,
     stopListening,
-    isSupported: !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition),
+    isSupported: !!getSpeechRecognitionConstructor(),
   };
 };

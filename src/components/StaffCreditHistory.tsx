@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { computeRunningBalances } from '../utils/fiadoCalculations';
 
@@ -20,11 +20,7 @@ export const StaffCreditHistory: React.FC<StaffCreditHistoryProps> = ({ funciona
   const [movements, setMovements] = useState<(CreditMovement & { saldoApos: number })[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchMovements();
-  }, [funcionarioId]);
-
-  const fetchMovements = async () => {
+  const fetchMovements = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('credito_movimentos')
@@ -41,7 +37,11 @@ export const StaffCreditHistory: React.FC<StaffCreditHistoryProps> = ({ funciona
     const computed = computeRunningBalances(data || []);
     setMovements(computed.reverse()); // Show newest first
     setLoading(false);
-  };
+  }, [funcionarioId]);
+
+  useEffect(() => {
+    fetchMovements();
+  }, [fetchMovements]);
 
   const handleDelete = async (id_movimento: string) => {
     if (!isGestor) return;

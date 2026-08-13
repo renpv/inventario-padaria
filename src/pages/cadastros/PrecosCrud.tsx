@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -26,13 +26,9 @@ export const PrecosCrud: React.FC = () => {
   const [idFornecedor, setIdFornecedor] = useState('');
   const [valor, setValor] = useState(0);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
-    
+
     const [resProd, resForn, resPrecos] = await Promise.all([
       supabase.from('produtos').select('id_produto, nome_produto').eq('ativo', 'SIM').order('nome_produto'),
       supabase.from('fornecedores').select('id_fornecedor, nome').eq('ativo', 'SIM').order('nome'),
@@ -54,11 +50,18 @@ export const PrecosCrud: React.FC = () => {
     }
 
     if (resPrecos.data) {
-      setPrecos(resPrecos.data as any);
+      setPrecos(resPrecos.data as Preco[]);
     }
-    
+
     setLoading(false);
-  };
+    // idProduto/idFornecedor lidos só para um default "se ainda não setado" — não deve
+    // re-disparar o fetch quando eles mudam (evita refetch redundante a cada seleção).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
