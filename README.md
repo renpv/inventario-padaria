@@ -1,75 +1,25 @@
-# React + TypeScript + Vite
+# Padaria Inventário & WMS
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sistema de inventário por voz e PWA para gestão operacional de padarias. Suporta contagem offline-first, cálculo de sugestão de compra automatizada e controle rigoroso de débitos e fiados para funcionários.
 
-Currently, two official plugins are available:
+## Funcionalidades Principais
+- **Voice-first & Mobile-first:** Otimizado primariamente para smartphones compartilhados da operação no balcão, permitindo ditar estoques e sobras/perdas.
+- **Offline-First:** As informações alimentadas por balcão e caixas são gravadas no navegador via Dexie (IndexedDB) e empurradas via `syncDaemon` para o banco quando há rede.
+- **WMS:** Dashboard analítico e automatizado calculando consumos por produto dentro dos limites periódicos.
+- **Gestão de Crédito/Fiado:** Bloqueio no banco de dados para evitar excessos (conforme limite global de fiado). Interface gerencial protegida por Auth duplo (Google OAuth).
+- **Self-Healing SQL:** Injeção automática de turnos não trabalhados (aborted) para preservar coerência cronológica do estoque local.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Documentação Extra
+- [CONSTITUTION.md](./CONSTITUTION.md) - Regras fundamentais arquiteturais do projeto.
+- [CHANGELOG.md](./CHANGELOG.md) - Modificações mapeadas por grandes entregas de versão.
+- [TECHNICAL_DOC.md](./TECHNICAL_DOC.md) - Especificações técnicas e decisões da camada de código.
+- [DOCUMENTATION_OF_TESTS.md](./DOCUMENTATION_OF_TESTS.md) - Como rodar testes (Playwright, pgTAP, Vitest) que garantem a segurança da aplicação.
+- [quickstart.md](./quickstart.md) - Check-list do sistema (Deploy/Homologação).
 
-## React Compiler
+## Tecnologias e Dependências
+- **Frontend:** React 19 + TypeScript + Vite PWA + TailwindCSS v4.
+- **Backend:** Supabase (PostgreSQL, Edge Functions via RPC).
+- **Testes:** Vitest (unitário), Playwright (E2E), pgTAP (Supabase).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+## Como Instalar e Rodar
+Leia o nosso [quickstart.md](./quickstart.md) para verificar como criar a instância no Supabase e instalar este projeto localmente em 5 minutos.
