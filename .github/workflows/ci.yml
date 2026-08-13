@@ -32,30 +32,13 @@ jobs:
       - name: Unit tests
         run: npm run test
 
-  # Testes end-to-end (Playwright) rodam num job separado porque exigem os
-  # browsers instalados e são mais lentos. Rodam apenas em pull requests para
-  # não atrasar todo push em branches de feature; ajuste conforme a
-  # necessidade do time (ex.: também disparar em push para main).
-  e2e:
-    name: End-to-end tests (Playwright)
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-
-      - name: Run Playwright tests
-        run: npm run test:e2e
+  # Testes de integração e e2e (tests/integration, tests/e2e) rodam contra o
+  # projeto Supabase REAL — e é o MESMO projeto usado em produção, sem
+  # staging separado (ver DEPLOY.md). Rodar isso automaticamente em todo
+  # push/PR já se mostrou frágil na prática: cada teste dispara um sign-in
+  # anônimo e a suíte inteira esbarra no rate limit do Supabase (ver AUTH.md)
+  # — de propósito, não estão neste workflow. Rode localmente antes de
+  # mergear mudanças que toquem auth, RLS, ou fluxos operacionais/gerenciais:
+  #
+  #   npm run test:integration
+  #   npm run test:e2e

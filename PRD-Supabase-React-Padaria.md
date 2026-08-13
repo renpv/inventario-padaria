@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Projeto:** Sistema de Inventário e WMS (Padaria)
-**Versão:** 3.2
+**Versão:** 3.3
 **Data:** 2026-08-13
 **Stack alvo:** Supabase (PostgreSQL + Auth) + React (SPA/PWA) + Web Speech API (voz)
 
@@ -16,6 +16,14 @@
 > (conta `gestao` de teste, RNF-04) e um **gap conhecido de deploy**: quatro
 > RPCs da migração `20260813150000_onda2_lifecycle_and_gaps.sql` não estavam
 > aplicadas no ambiente usado para validar esta versão (ver 7.4).
+>
+> **Notas da v3.3:** primeiro deploy real em produção (Vercel, ver RNF-05).
+> Documenta dois requisitos de configuração descobertos nesse processo — o
+> rewrite de SPA (`vercel.json`) e o Supabase Auth URL Configuration
+> precisando cobrir o domínio de produção (login com Google redirecionava
+> para localhost sem isso) — e um novo gap de dados: `produtos` está vazio no
+> projeto Supabase de produção (ver 7.5), então a área operacional não tem
+> setores disponíveis até a gestão cadastrar produtos.
 
 > Este documento descreve o comportamento exigido do sistema com detalhe
 > suficiente para reimplementá-lo na stack Supabase + React. As seções 6
@@ -570,6 +578,23 @@ SQL Editor do painel). Os testes de integração
 propósito até isso ser corrigido, servindo como verificação de que a correção
 foi aplicada.
 
+**Status em 2026-08-13 (pós-deploy):** ainda pendente — reconfirmado após o
+primeiro deploy em produção (ver RNF-05). Como o mesmo projeto Supabase serve
+produção, isso já afeta usuários reais, não só o ambiente de teste.
+
+### 7.5 Gap conhecido: `produtos` sem dados em produção (v3.3)
+
+O projeto Supabase de produção tem `setores` (5), `turnos` (4) e
+`funcionarios` (3) cadastrados, mas **`produtos` está com 0 linhas**. Como
+RF-03 só exibe setores com ao menos um produto ativo, isso significa que, no
+estado atual, a área operacional não tem nenhum setor disponível para
+contagem — o app está no ar mas não é utilizável pela operação até que a
+gestão cadastre produtos (RF-13, via Config → Cadastros → Produtos).
+
+Isso não é um bug: é o estado esperado de um deploy inicial sem dados de
+seed. Registrado aqui para não ser confundido com uma falha do sistema
+durante a validação pós-deploy.
+
 ---
 
 ## 8. Regras de Cálculo
@@ -740,9 +765,22 @@ Para cada turno ativo com ordem < N (consultando tabela `turnos`):
 
 ### RNF-05 | Deploy e CI/CD
 
-- **Frontend:** Vercel, com HTTPS automático e deploy via Git.
-- **Backend:** Supabase (plano free ou pro, conforme demanda).
+- **Frontend:** Vercel, com HTTPS automático e deploy via Git. **Em produção
+  desde 2026-08-13** — https://inventario-padaria.vercel.app (domínio
+  estável; repo `renpv/inventario-padaria`, deploy automático em push para
+  `main`).
+- **Backend:** Supabase (plano free ou pro, conforme demanda). O mesmo
+  projeto Supabase serve produção e desenvolvimento local — não há ambiente
+  de staging separado (ver 7.4 para o estado atual desse projeto).
 - **CI/CD:** pipeline automatizado (GitHub Actions ou similar) para build, testes e deploy.
+- **SPA routing:** `vercel.json` com rewrite (`/(.*) → /index.html`) é
+  obrigatório — sem ele, refresh em qualquer rota que não seja `/` retorna
+  404 (React Router só resolve a rota no cliente).
+- **Supabase Auth URL Configuration** (Site URL + Redirect URLs) precisa
+  incluir o domínio de produção, além de localhost — do contrário, o login
+  com Google completa mas redireciona de volta para o Site URL configurado
+  (não é bug de código, é config do projeto Supabase; precisa ser revisada a
+  cada novo domínio que passa a servir o app).
 
 ### RNF-06 | Segurança
 
