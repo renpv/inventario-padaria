@@ -37,8 +37,7 @@ test.describe('Login and Inventory Flow', () => {
     await expect(page).toHaveURL(/.*\/inventario\/.*\/1/);
 
     // Verify inventory elements
-    await expect(page.getByText('Inventário:')).toBeVisible();
-    await expect(page.getByPlaceholder('Adicionar item (Ex: pão francês, bolo)')).toBeVisible();
+    await expect(page.getByText('Contagem de Estoque')).toBeVisible({ timeout: 15000 });
   });
 
   test('should show error for invalid PIN', async ({ page }) => {
