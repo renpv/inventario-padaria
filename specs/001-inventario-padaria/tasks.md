@@ -119,6 +119,7 @@
 **Goal**: Implementar fluxo de lista branca para o cadastro no OAuth do Supabase, barrando intrusos.
 
 - [x] T035 Create a database trigger to enforce Whitelist logic (only pre-registered emails can login via Google).
+- [x] T036 Build User Management Interface in `Config.tsx` to handle Whitelist pre-registrations.
 
 ---
 
