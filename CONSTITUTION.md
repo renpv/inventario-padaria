@@ -5,7 +5,7 @@ Este documento define as regras e diretrizes fundamentais para o desenvolvimento
 ## 1. Princípios Essenciais (Core Principles)
 
 ### I. Abordagem Mobile-First & PWA
-Toda interface de usuário deve ser desenhada primariamente para telas de celulares, visto que a operação ocorre inteiramente via dispositivos móveis compartilhados no balcão da padaria. A aplicação deve operar como Progressive Web App (PWA).
+Toda interface de usuário deve ser desenhada primariamente para telas de celulares, visto que a operação ocorre prioritariamente via dispositivos móveis compartilhados no balcão da padaria. A aplicação deve operar como Progressive Web App (PWA). A aplicação também deve prever o uso exporádico de telas maiores (tablets e desktops) pela gestão, mas sem abrir mão do design mobile-first.
 
 ### II. Offline-First & Resiliência
 A instabilidade de rede não deve interromper a operação. 
@@ -35,6 +35,8 @@ O progresso deve ser granular e rastreável. Cada tarefa listada em `task.md` e 
 1. **Gestão de Tarefas:** Todo o escopo de trabalho reside na lista de verificação `task.md`. Nenhuma grande alteração deve ser feita sem antes constar como uma tarefa a ser atacada.
 2. **Atualização de Status:** Ao iniciar e ao finalizar uma funcionalidade, a respectiva checkbox no `task.md` deve ser marcada.
 3. **Revisão:** A arquitetura proposta para novos desafios deve sempre se alinhar às premissas do Product Requirements Document (PRD).
+4. **Changelog:** Toda funcionalidade finalizada deve ter seu respectivo impacto registrado concisamente no arquivo `CHANGELOG.md`.
+5. **Documentação Técnica:** Alterações arquiteturais, decisões de design e especificações técnicas relevantes devem ser continuamente refletidas no `TECHNICAL_DOC.md`.
 
 ## Governança
 
