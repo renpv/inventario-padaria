@@ -1,0 +1,12 @@
+# Espelha o job "build-and-test" do CI (.github/workflows/ci.yml) — pega
+# localmente o que faria o servidor falhar, antes do push. Testes de
+# integração/e2e ficam de fora de propósito (rodam contra o Supabase real
+# de produção, sem staging — ver AUTH.md/DEPLOY.md); rode-os manualmente
+# antes de mergear mudanças de auth/RLS/fluxos.
+set -e
+
+echo "[pre-push] type-check + build..."
+npm run build
+
+echo "[pre-push] unit tests..."
+npm test
