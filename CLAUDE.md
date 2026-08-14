@@ -30,9 +30,9 @@ supabase/{migrations,functions}/ # SQL versionado + Edge Functions
 tests/{e2e,integration}/         # Playwright + Vitest contra Supabase real
 ```
 
-## 🗄️ Estado do banco — ⚠️ ação pendente
+## 🗄️ Estado do banco
 
-O projeto Supabase de `.env` é o **mesmo usado em produção** (sem staging separado) e tem dois gaps conhecidos ainda não resolvidos: uma migração não aplicada (quebra `encerrar_turno`, `reabrir_turno`, `consultar_estoque`, `conferir_recebimento`) e a tabela `produtos` vazia (área operacional sem setores disponíveis até a gestão cadastrar produtos). **Detalhes e como corrigir:** [DEPLOY.md](./DEPLOY.md).
+O projeto Supabase de `.env` é o **mesmo usado em produção** (sem staging separado). Migrações aplicadas e confirmadas (2026-08-13, 23/23 testes de integração verdes). Gap restante: tabela `produtos` vazia — área operacional sem setores disponíveis até a gestão cadastrar produtos (Config → Cadastros → Produtos). **Detalhes:** [DEPLOY.md](./DEPLOY.md).
 
 ## 🚀 Deploy & CI
 
@@ -75,9 +75,9 @@ npm run lint
 - [ ] Nunca commitar `.env.local` (segredos) — hoje ficam em variáveis de ambiente do Windows (`setx`), não em arquivo
 - [ ] `SUPABASE_SERVICE_ROLE_KEY`/`SUPABASE_ACCESS_TOKEN` só em scripts Node, nunca em `src/`
 - [ ] `handle_new_user` (whitelist) ignorando sessões anônimas
-- [ ] Rate limit de sign-in anônimo com folga (Authentication → Rate Limits)
-- [ ] Supabase Auth URL Configuration cobrindo todo domínio ativo (ver DEPLOY.md)
-- [ ] Migração `20260813150000_onda2_lifecycle_and_gaps.sql` aplicada — **pendente** (ver DEPLOY.md)
+- [x] Rate limit de sign-in anônimo revisado — 30/h por IP (default do Supabase); com o cache de sessão, cada dispositivo só consome isso raramente (não mais 1 por login), então está OK por ora
+- [x] Supabase Auth URL Configuration cobrindo todo domínio ativo (ver DEPLOY.md)
+- [x] Migrações aplicadas (2026-08-13) — `encerrar_turno`, `reabrir_turno`, `consultar_estoque`, `conferir_recebimento` confirmadas via `npm run test:integration`
 
 ## 📚 Referências
 

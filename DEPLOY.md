@@ -31,14 +31,15 @@ Sem a URL de produção nessa lista, o login com Google completa mas redireciona
   - `VERCEL_TOKEN`: permite `vercel` CLI sem login interativo.
 - `E2E_GESTAO_TEST_EMAIL`/`PASSWORD`: credenciais da conta de teste de gestão (ver `TEST-INSTRUCTIONS.md`), hoje em `.env.local`.
 
-## Gaps conhecidos em produção (2026-08-13)
+## Gaps conhecidos em produção
 
 O mesmo projeto Supabase (`srzemgdpwunhnnfxdgjs`) serve produção e desenvolvimento local — não há staging separado.
 
-**1. Migração não aplicada** — `supabase/migrations/20260813150000_onda2_lifecycle_and_gaps.sql` está no repo mas não no banco. Quebra `encerrar_turno` (RF-07), `reabrir_turno` (RF-21), `consultar_estoque` (RF-10) e `conferir_recebimento` (RF-09/17) com `PGRST202`. Também traz a constraint `UNIQUE(id_lancamento, id_produto)` e o trigger `check_lancamento_editable` em `lancamentos_itens`, sem os quais o upsert de contagem do Inventário pode duplicar linhas.
-Ação: `supabase db push` (com `SUPABASE_ACCESS_TOKEN` configurado) ou colar o SQL no painel. Os testes em `tests/integration/` têm casos vermelhos de propósito até isso ser corrigido — não "conserte" os testes, conserte o deploy.
+**Migrações — ✅ resolvido em 2026-08-13.** `20260813150000_onda2_lifecycle_and_gaps.sql`, `20260813160000_email_fechamento.sql` e `20260813170000_fix_anonymous_pin_login.sql` foram aplicadas. `encerrar_turno`, `reabrir_turno`, `consultar_estoque` e `conferir_recebimento` confirmadas funcionando (23/23 em `npm run test:integration`).
 
-**2. `produtos` vazio** — `setores` (5), `turnos` (4) e `funcionarios` (3) têm dados reais, mas `produtos` tem 0 linhas. RF-03 só mostra setores com produto ativo, então a área operacional não tem nenhum setor disponível pra contar até a gestão cadastrar produtos (Config → Cadastros → Produtos). Não é bug — é o estado esperado de um deploy inicial sem seed de dados.
+**`produtos` vazio — ainda pendente.** `setores` (8), `turnos` (4) e `funcionarios` (3) têm dados reais, mas `produtos` tem 0 linhas. RF-03 só mostra setores com produto ativo, então a área operacional não tem nenhum setor disponível pra contar até a gestão cadastrar produtos (Config → Cadastros → Produtos). Não é bug — é o estado esperado de um deploy inicial sem seed de dados.
+
+**Rate limit de sign-in anônimo — revisado, mantido no default.** Confirmado em 2026-08-13: 30 sign-ins anônimos/hora por IP (default do Supabase). Antes do cache de sessão (ver AUTH.md) isso seria apertado — um operador por login consumia 1 unidade. Com o cache, um dispositivo só consome isso ocasionalmente (sessão expirada/cache limpo), então o default deve bastar; monitore se aparecer `over_request_rate_limit` de novo.
 
 ## Troubleshooting rápido
 
@@ -46,5 +47,5 @@ Ação: `supabase db push` (com `SUPABASE_ACCESS_TOKEN` configurado) ou colar o 
 |---|---|
 | 404 ao dar refresh numa rota (`/wms`, etc.) em produção | `vercel.json` ausente/removido |
 | Login Google redireciona pra localhost | Supabase Auth URL Configuration sem o domínio de produção |
-| RPC "Could not find the function ... in the schema cache" (`PGRST202`) | Migração não aplicada — ver gap #1 acima |
+| RPC "Could not find the function ... in the schema cache" (`PGRST202`) | Alguma migração não aplicada — confira `supabase/migrations/` vs. o que rodou no banco |
 | `over_request_rate_limit` no console | Cota de sign-in anônimo esgotada — ver `AUTH.md` |

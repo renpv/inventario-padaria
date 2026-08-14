@@ -1,7 +1,7 @@
 # Documento de Requisitos do Produto (PRD)
 
 **Projeto:** Sistema de Inventário e WMS (Padaria)
-**Versão:** 3.3
+**Versão:** 3.4
 **Data:** 2026-08-13
 **Stack alvo:** Supabase (PostgreSQL + Auth) + React (SPA/PWA) + Web Speech API (voz)
 
@@ -24,6 +24,13 @@
 > para localhost sem isso) — e um novo gap de dados: `produtos` está vazio no
 > projeto Supabase de produção (ver 7.5), então a área operacional não tem
 > setores disponíveis até a gestão cadastrar produtos.
+>
+> **Notas da v3.4:** o gap de migração da v3.2 (7.4) foi **resolvido** — as
+> três migrações pendentes foram aplicadas em produção e reconfirmadas via
+> `npm run test:integration` (23/23). O rate limit de sign-in anônimo
+> (RNF-06) foi revisado e mantido no default do Supabase (30/h por IP),
+> considerado suficiente dado o cache de sessão implementado na v3.1/3.2. O
+> gap de `produtos` vazio (7.5) permanece em aberto.
 
 > Este documento descreve o comportamento exigido do sistema com detalhe
 > suficiente para reimplementá-lo na stack Supabase + React. As seções 6
@@ -549,7 +556,7 @@ Domínios modelados como enums em Postgres:
 | `enviar_email_fechamento` | Chamada via webhook ou cron | Envia e-mail ao encerrar último turno do dia |
 | `enviar_push_notification`| Chamada por eventos      | Push notification para turnos atrasados, pedidos entregues |
 
-### 7.4 Gap conhecido: migração não aplicada em produção (v3.2)
+### 7.4 Gap resolvido: migração não aplicada em produção (v3.2 → resolvido v3.4)
 
 Testes de integração (RNF-04) descobriram que 4 funções definidas em
 `supabase/migrations/20260813150000_onda2_lifecycle_and_gaps.sql` **não
@@ -578,9 +585,12 @@ SQL Editor do painel). Os testes de integração
 propósito até isso ser corrigido, servindo como verificação de que a correção
 foi aplicada.
 
-**Status em 2026-08-13 (pós-deploy):** ainda pendente — reconfirmado após o
-primeiro deploy em produção (ver RNF-05). Como o mesmo projeto Supabase serve
-produção, isso já afeta usuários reais, não só o ambiente de teste.
+**Status em 2026-08-13 (pós-deploy):** ✅ **resolvido.** As três migrações
+pendentes (`20260813150000_onda2_lifecycle_and_gaps.sql`,
+`20260813160000_email_fechamento.sql`,
+`20260813170000_fix_anonymous_pin_login.sql`) foram aplicadas ao projeto de
+produção. As 4 RPCs foram reconfirmadas funcionando e a suíte de integração
+completa (`npm run test:integration`) passou 23/23.
 
 ### 7.5 Gap conhecido: `produtos` sem dados em produção (v3.3)
 
@@ -790,7 +800,7 @@ Para cada turno ativo com ordem < N (consultando tabela `turnos`):
 - PIN operacional validado contra banco (não hardcoded).
 - HTTPS obrigatório.
 - Whitelist de e-mail (`handle_new_user`) bloqueia contas de gestão não pré-cadastradas, mas **deve ignorar sessões anônimas** (`new.is_anonymous`) — do contrário, quebra o login operacional (ver 2.2.2).
-- **Rate limit de sign-ins anônimos:** o Supabase limita quantos usuários anônimos podem ser criados por período no projeto. Configurar esse limite (Authentication → Rate Limits) com folga suficiente para o volume real de logins/reloads operacionais esperado, já que a sessão anônima é reaproveitada mas ainda pode expirar e precisar ser recriada. **Confirmado na prática:** mesmo o volume gerado pela suíte de testes E2E esbarra nesse limite por padrão — é um indício de que o limite default do projeto está baixo demais também para o uso real esperado em produção (vários operadores/reloads ao longo do turno) e deveria ser revisto antes do lançamento.
+- **Rate limit de sign-ins anônimos:** o Supabase limita quantos usuários anônimos podem ser criados por período no projeto. Antes do cache de sessão (2.2.2), cada login/reload consumia uma unidade dessa cota — com o cache, um dispositivo só a consome ocasionalmente (sessão expirada/cache limpo). **Revisado em 2026-08-13:** mantido no default do projeto (30 sign-ins anônimos/hora por IP) — considerado suficiente para o volume real esperado (poucos dispositivos compartilhados por loja). A suíte de testes E2E, que faz um login por teste sem cache entre execuções, ainda pode esbarrar nesse limite quando rodada por inteiro — ver RNF-04.
 - **Service role key** (acesso administrativo total, contorna RLS): usada
   apenas em `scripts/setup-test-gestor.mjs` (Node, fora do bundle do
   cliente), guardada em `SUPABASE_SERVICE_ROLE_KEY` dentro de `.env.local`
